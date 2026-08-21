@@ -120,21 +120,53 @@ def test_dry_run_install_needs_no_workspace():
 from databricks360._layout import resolve as resolve_layout, setup_ddl
 
 
-def test_default_layout_creates_catalog_and_three_schemas():
-    src = build_notebook_source(COURSE, COURSE.notebooks[0], catalog="mfg", tier="small")
+def test_default_uses_current_catalog_and_creates_nothing_above_schema():
+    """The safe default for a governed workspace: no CREATE CATALOG at all."""
+    src = build_notebook_source(COURSE, COURSE.notebooks[0], catalog=None, tier="small")
+    assert "CREATE CATALOG IF NOT EXISTS" not in src
+    # Schema names are unqualified so SQL resolves them against current_catalog().
+    assert "CREATE SCHEMA IF NOT EXISTS core" in src
+    assert "CREATE SCHEMA IF NOT EXISTS ref" in src
+    assert "CREATE SCHEMA IF NOT EXISTS staging" in src
+    assert "CREATE VOLUME IF NOT EXISTS ref.documents" in src
+    # And it shows the learner where that actually is.
+    assert "SELECT current_catalog() AS default_catalog" in src
+
+
+def test_default_layout_tables_are_two_level():
+    src = build_notebook_source(COURSE, COURSE.notebooks[1], catalog=None, tier="small")
+    assert "core.dim_date" in src
+    assert "mfg.core" not in src
+
+
+def test_named_catalog_qualifies_and_switches_to_it():
+    src = build_notebook_source(COURSE, COURSE.notebooks[0], catalog="main", tier="small")
+    assert "USE CATALOG main;" in src
+    assert "CREATE CATALOG IF NOT EXISTS" not in src
+    assert "CREATE SCHEMA IF NOT EXISTS main.core" in src
+
+
+def test_creating_a_catalog_is_opt_in():
+    layout = resolve_layout(catalog="mfg", create_catalog=True)
+    src = build_notebook_source(COURSE, COURSE.notebooks[0], catalog="mfg", tier="small", layout=layout)
     assert "CREATE CATALOG IF NOT EXISTS mfg" in src
     assert "CREATE SCHEMA IF NOT EXISTS mfg.core" in src
-    assert "CREATE SCHEMA IF NOT EXISTS mfg.ref" in src
-    assert "CREATE SCHEMA IF NOT EXISTS mfg.staging" in src
-    assert "CREATE VOLUME IF NOT EXISTS mfg.ref.documents" in src
+
+
+def test_create_catalog_without_a_name_is_rejected():
+    try:
+        resolve_layout(create_catalog=True)
+    except ValueError as exc:
+        assert "current_catalog()" in str(exc)
+    else:
+        raise AssertionError("create_catalog=True with no catalog should raise")
 
 
 def test_no_create_catalog_privilege():
-    layout = resolve_layout(catalog="main", create_catalog=False)
+    layout = resolve_layout(catalog="main")
     src = build_notebook_source(COURSE, COURSE.notebooks[0], catalog="main", tier="small", layout=layout)
-    # The header documents all three layouts, so match the statement, not the phrase.
     assert "CREATE CATALOG IF NOT EXISTS" not in src
-    assert "Skipping CREATE CATALOG" in src
+    assert "No CREATE CATALOG attempted" in src
     # Schemas are still created inside the catalog we were given.
     assert "CREATE SCHEMA IF NOT EXISTS main.core" in src
 
@@ -156,7 +188,7 @@ def test_single_schema_layout_collapses_everything():
 def test_single_schema_skips_ddl_it_cannot_run():
     layout = resolve_layout(catalog="main", schema="training_you")
     src = build_notebook_source(COURSE, COURSE.notebooks[0], catalog="main", tier="small", layout=layout)
-    assert "Skipping CREATE CATALOG" in src
+    assert "CREATE CATALOG IF NOT EXISTS" not in src
     assert "Skipping CREATE SCHEMA" in src
     # The volume still lands in the one schema we do own.
     assert "CREATE VOLUME IF NOT EXISTS main.training_you.documents" in src

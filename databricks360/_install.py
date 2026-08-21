@@ -36,13 +36,15 @@ class Installation:
     def __repr__(self) -> str:  # what a notebook cell shows
         lines = [
             f"Installed '{self.course_id}' → {self.folder}",
-            f"  catalog: {self.catalog}    tier: {self.tier}",
+            f"  tier: {self.tier}",
         ]
         if self.layout:
             lines.append(f"  {self.layout.describe()}")
             skipped = [
                 label for label, on in (
-                    ("CREATE CATALOG", self.layout.create_catalog),
+                    # Not "skipped" when no catalog was named — describe() already
+                    # says we are using current_catalog(), and there is nothing to skip.
+                    ("CREATE CATALOG", self.layout.create_catalog or self.layout.uses_current_catalog),
                     ("CREATE SCHEMA", self.layout.create_schema),
                     ("CREATE VOLUME", self.layout.create_volume),
                 ) if not on
@@ -99,7 +101,11 @@ def build_notebook_source(
     layout = layout or resolve_layout(catalog=catalog)
 
     values = {
-        "CATALOG": layout.catalog,
+        "CATALOG": layout.catalog or "current_catalog()",
+        "INFO_SCHEMA": (
+            "information_schema" if layout.catalog is None
+            else f"{layout.catalog}.information_schema"
+        ),
         "CORE": layout.core,
         "REF": layout.ref,
         "STAGING": layout.staging,
@@ -130,7 +136,7 @@ def install(
     catalog: str | None = None,
     schema: str | None = None,
     tier: str | None = None,
-    create_catalog: bool | None = None,
+    create_catalog: bool = False,
     create_schema: bool | None = None,
     create_volume: bool = True,
     overwrite: bool = False,
@@ -142,22 +148,23 @@ def install(
     on the learner's warehouse, and Module 0 of the course is partly about
     watching it happen rather than having it appear.
 
-    For a restricted Unity Catalog:
+    By default the lab lands in the session's current catalog and nothing is
+    created above schema level, which is what a governed workspace normally allows:
 
-        # cannot create catalogs, but can create schemas in one you were given
-        install('genie-agents', catalog='main', create_catalog=False)
+        install('genie-agents')                              # current_catalog()
+        install('genie-agents', catalog='main')              # a catalog you were granted
+        install('genie-agents', catalog='mfg', create_catalog=True)
+        install('genie-agents', schema='training_you')       # one schema you own
 
-        # only one schema, already provisioned for you
-        install('genie-agents', catalog='main', schema='training_you')
-
-    Passing `schema` puts every object in that one schema and assumes you can
-    create neither the catalog nor the schema, since that is why you would use it.
+    Passing `schema` puts every object in that one schema and assumes you cannot
+    create it either, since that is why you would reach for it.
     """
     from ._catalog import get_course
 
     course = get_course(course_id)
-    catalog = catalog or course.default_catalog
     tier = tier or course.default_tier
+    # catalog=None means the session's current catalog. The manifest's
+    # default_catalog is only a suggestion for people who can create one.
     layout = resolve_layout(
         catalog=catalog,
         schema=schema,
@@ -202,6 +209,7 @@ def install(
         )
 
     return Installation(
-        course_id=course.id, folder=folder, catalog=catalog,
+        course_id=course.id, folder=folder,
+        catalog=layout.catalog or "current_catalog()",
         tier=tier, notebooks=installed, layout=layout,
     )
