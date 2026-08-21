@@ -92,15 +92,49 @@ def test_banner_splitting_finds_sections():
         assert expected in titles
 
 
-def test_flaw_comments_survive_into_the_notebook():
-    """The teaching lives in the column comments, so they must reach the notebook."""
-    src = build_notebook_source(COURSE, COURSE.notebooks[1], catalog="mfg", tier="small")
-    assert "STARTS 1 OCTOBER" in src
-    assert "users say the full state name" in src.replace("\n", " ").lower()
+def test_notebooks_do_not_reveal_the_planted_flaws():
+    """The notebooks must not name what is wrong with the data.
 
-    facts = build_notebook_source(COURSE, COURSE.notebooks[2], catalog="mfg", tier="small")
-    assert "ONE ROW PER ACCOUNT PER DAY" in facts
-    assert "never SUM" in facts
+    Lab 0 asks learners to predict the wrong answers an uncurated agent will give,
+    and Module 4 asks them to diagnose them. A notebook captioned "FLAW #2" hands
+    over both. Worse, a column comment saying "never SUM across dates" is the fix
+    itself — Genie reads Unity Catalog comments, so it would stop making the
+    mistake at all and Module 7 would have nothing left to teach.
+    """
+    # Case-insensitive: an earlier version of this test used "FLAW" and missed a
+    # header that said "Plants the four remaining flaws".
+    spoilers = [
+        "flaw",
+        "never SUM", "NEVER SUM",
+        "Do NOT sum",
+        "Enable entity matching",
+        "Ask which one the user means",
+        "Never mix the two",
+        "will inflate transaction counts",
+        "deliberate", "on purpose",
+        "the scariest",
+        "nobody would ever get",
+    ]
+    for nb in COURSE.notebooks:
+        src = build_notebook_source(COURSE, nb, catalog=None, tier="small")
+        low = src.lower()
+        for phrase in spoilers:
+            assert phrase.lower() not in low, f"{nb.sql} reveals the answer: {phrase!r}"
+
+
+def test_column_comments_are_terse():
+    """Real bank catalogues have short, unhelpful comments. Long prescriptive ones
+    are course-author voice leaking into production metadata."""
+    import re
+
+    for nb in COURSE.notebooks:
+        src = build_notebook_source(COURSE, nb, catalog=None, tier="small")
+        for match in re.finditer(r"COMMENT '([^']+)'", src):
+            body = match.group(1)
+            # The schema-level comments explaining the lab are fine; column
+            # comments are what an agent reads as context.
+            if len(body) > 120 and "teaching dataset" not in body:
+                raise AssertionError(f"{nb.sql}: comment too instructive — {body[:80]}")
 
 
 def test_dry_run_install_needs_no_workspace():

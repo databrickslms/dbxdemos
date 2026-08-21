@@ -1,30 +1,22 @@
 -- ============================================================================
 -- Meridian Financial Group — 02. Dimensions
 --
--- Plants four of the nine flaws:
---   #2  fiscal year starts 1 October          -> dim_date
---   #3  region and state are CODES, not names -> dim_branch
---   #5  two competing product hierarchies     -> dim_product
---   #8  PII columns present and unmasked      -> dim_customer
---   #9  multi-currency needs as-of-date FX    -> dim_fx_rate
+-- dim_date, dim_branch, dim_product, dim_customer, dim_account, dim_fx_rate.
 --
--- All values derive from hash() of the row key, never rand(), so every learner
--- gets byte-identical data and benchmark ground-truth SQL stays valid.
+-- All values derive from hash() of the row key rather than rand(), so the data
+-- is identical for everyone and reproducible on re-run.
 --
--- ANCHOR DATE: 2026-09-30 (last day of FY2026). Ages and tenures are computed
--- from this fixed date rather than current_date, or the data would drift and
--- benchmark answers would rot.
+-- ANCHOR DATE: 2026-09-30. Ages and tenures are computed from this fixed date
+-- rather than current_date, so the dataset does not drift over time.
 -- ============================================================================
 
 
 -- ============================================================================
--- dim_date  —  FLAW #2: fiscal year begins 1 October
--- FY2025 = 2024-10-01 .. 2025-09-30
--- FY2026 = 2025-10-01 .. 2026-09-30
--- Two complete fiscal years, so "this year vs last year" questions work.
+-- dim_date  —  calendar with Meridian fiscal attributes
+-- Covers 2024-10-01 to 2026-09-30.
 -- ============================================================================
 CREATE OR REPLACE TABLE {{CORE}}.dim_date
-COMMENT 'Calendar with Meridian fiscal attributes. Meridian fiscal year starts 1 October: FY2026 = 2025-10-01 to 2026-09-30. Fiscal and calendar columns are both present and will disagree.'
+COMMENT 'Date dimension with fiscal and calendar attributes.'
 AS
 WITH d AS (
   SELECT explode(sequence(DATE'2024-10-01', DATE'2026-09-30', INTERVAL 1 DAY)) AS date_key
@@ -64,23 +56,20 @@ FROM calc;
 ALTER TABLE {{CORE}}.dim_date ALTER COLUMN date_key
   COMMENT 'Calendar date. One row per day.';
 ALTER TABLE {{CORE}}.dim_date ALTER COLUMN fiscal_year
-  COMMENT 'Meridian fiscal year, format FY2026. The fiscal year STARTS 1 OCTOBER, so FY2026 runs 2025-10-01 to 2026-09-30. "Last year" means the prior FISCAL year unless the user says "calendar year".';
+  COMMENT 'Fiscal year label.';
 ALTER TABLE {{CORE}}.dim_date ALTER COLUMN fiscal_quarter
-  COMMENT 'Meridian fiscal quarter, format FY2026-Q3. Q1 = Oct-Dec, Q2 = Jan-Mar, Q3 = Apr-Jun, Q4 = Jul-Sep.';
+  COMMENT 'Fiscal quarter label.';
 ALTER TABLE {{CORE}}.dim_date ALTER COLUMN calendar_year
-  COMMENT 'Calendar year. Use ONLY when the user explicitly asks for calendar periods; otherwise use fiscal_year.';
+  COMMENT 'Calendar year.';
 ALTER TABLE {{CORE}}.dim_date ALTER COLUMN is_business_day
-  COMMENT 'False for weekends and fixed-date US federal holidays.';
+  COMMENT 'Business day indicator.';
 
 
 -- ============================================================================
--- dim_branch  —  FLAW #3: region and state are stored as CODES
--- Users say "Northeast", "the West Coast", "California".
--- The table holds NE, WEST, CA. Without entity matching, Genie filters on the
--- spoken form, matches nothing, and returns a confident zero.
+-- dim_branch  —  the 340-branch network
 -- ============================================================================
 CREATE OR REPLACE TABLE {{CORE}}.dim_branch
-COMMENT 'Meridian branch network, 340 branches. Region and state are stored as SHORT CODES, not the names people say out loud.'
+COMMENT 'Branch dimension.'
 AS
 WITH b AS (SELECT id AS n FROM range(1, 341)),
 assigned AS (
@@ -116,22 +105,18 @@ SELECT
 FROM assigned;
 
 ALTER TABLE {{CORE}}.dim_branch ALTER COLUMN region
-  COMMENT 'Sales region CODE. Values: NE, SE, MW, WEST. Users say "Northeast" (NE), "Southeast" (SE), "Midwest" (MW), "the West" or "West Coast" (WEST).';
+  COMMENT 'Region code.';
 ALTER TABLE {{CORE}}.dim_branch ALTER COLUMN state
-  COMMENT 'Two-letter US state CODE, e.g. CA, NY, TX. Users say the full state name ("California"). Enable entity matching on this column.';
+  COMMENT 'State code.';
 ALTER TABLE {{CORE}}.dim_branch ALTER COLUMN channel
-  COMMENT 'Branch servicing model. Values: RETAIL, COMMERCIAL, PRIVATE_CLIENT.';
+  COMMENT 'Servicing model.';
 
 
 -- ============================================================================
--- dim_product  —  FLAW #5: two competing hierarchies
--- product_category   = how the business talks about products
--- regulatory_product_class = how they roll up for Basel/regulatory reporting
--- Both are correct. Leaving both visible produces two different answers to
--- "revenue by product", and nobody can tell which one they got.
+-- dim_product  —  product master
 -- ============================================================================
 CREATE OR REPLACE TABLE {{CORE}}.dim_product
-COMMENT 'Product master. Carries TWO hierarchies that do not align: product_category (business view) and regulatory_product_class (Basel reporting view). Expose only one to an agent.'
+COMMENT 'Product master.'
 AS
 SELECT * FROM VALUES
   ('P01','Everyday Checking',            'DEPOSITS','RETAIL_DEPOSIT'),
@@ -157,22 +142,18 @@ SELECT * FROM VALUES
 AS t(product_id, product_name, product_category, regulatory_product_class);
 
 ALTER TABLE {{CORE}}.dim_product ALTER COLUMN product_category
-  COMMENT 'BUSINESS product hierarchy. Values: DEPOSITS, CARDS, LENDING, WEALTH. This is the one business users mean by "product". Prefer this and hide regulatory_product_class.';
+  COMMENT 'Product category.';
 ALTER TABLE {{CORE}}.dim_product ALTER COLUMN regulatory_product_class
-  COMMENT 'REGULATORY (Basel) product hierarchy used for capital reporting. Does NOT align with product_category - a Debit Card is CARDS here but RETAIL_DEPOSIT there. Never mix the two in one rollup.';
+  COMMENT 'Regulatory product class.';
 
 
 -- ============================================================================
--- dim_customer  —  FLAW #8: PII columns, deliberately unprotected
--- ssn_last4, email, dob and annual_income all sit here in the clear so that
--- Module 6 can demonstrate column masks doing real work, and demonstrate a
--- text instruction ("never show PII") failing to.
---
--- Every value is synthetic. Emails use example.com (RFC 2606 reserved) and
--- ssn_last4 is a hashed 4-digit string, not derived from anything real.
+-- dim_customer  —  retail and commercial customers
+-- All values are synthetic. Emails use example.com (RFC 2606 reserved) and
+-- ssn_last4 is a hashed 4-digit string derived from nothing real.
 -- ============================================================================
 CREATE OR REPLACE TABLE {{CORE}}.dim_customer
-COMMENT 'Retail and commercial customers, 2.1M rows. CONTAINS PII: ssn_last4, email, dob, annual_income. All values are synthetic. Protect with Unity Catalog column masks, never with agent instructions.'
+COMMENT 'Customer dimension. Synthetic data.'
 AS
 WITH c AS (SELECT id AS n FROM range(1, 2100001)),
 calc AS (
@@ -202,26 +183,24 @@ SELECT
 FROM calc;
 
 ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN segment
-  COMMENT 'Customer segment. Values: MASS, AFFLUENT, PRIVATE, COMMERCIAL.';
+  COMMENT 'Customer segment.';
 ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN tenure_months
-  COMMENT 'Months since the customer relationship began, as of 2026-09-30.';
+  COMMENT 'Relationship tenure in months.';
 ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN ssn_last4
-  COMMENT 'PII. Last four digits of tax identifier (synthetic). Must be masked. Never expose in an answer.';
+  COMMENT 'Last four digits of tax identifier.';
 ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN email
-  COMMENT 'PII. Contact email (synthetic, example.com). Must be masked. Never expose in an answer.';
+  COMMENT 'Contact email.';
 ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN dob
-  COMMENT 'PII. Date of birth (synthetic). Must be masked. Use age bands for analysis instead.';
+  COMMENT 'Date of birth.';
 ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN annual_income
-  COMMENT 'PII. Self-reported annual income in USD (synthetic). Restricted - finance roles only.';
+  COMMENT 'Self-reported annual income, USD.';
 
 
 -- ============================================================================
--- dim_account  —  the join hub
--- Every fact joins to a dimension THROUGH this table. Getting its cardinality
--- wrong is how "revenue by region" quietly multiplies (Module 9).
+-- dim_account  —  account master
 -- ============================================================================
 CREATE OR REPLACE TABLE {{CORE}}.dim_account
-COMMENT 'Account master, ~2.9M rows. The join hub: transactions and balances reach customer, branch and product through this table.'
+COMMENT 'Account master.'
 AS
 WITH a AS (SELECT id AS n FROM range(1, 2900001)),
 calc AS (
@@ -247,18 +226,16 @@ SELECT
 FROM calc;
 
 ALTER TABLE {{CORE}}.dim_account ALTER COLUMN status
-  COMMENT 'Account status. Values: OPEN, CLOSED. Roughly 8% are CLOSED. Exclude CLOSED accounts from "active customer" style questions.';
+  COMMENT 'Account status.';
 ALTER TABLE {{CORE}}.dim_account ALTER COLUMN closed_date
-  COMMENT 'Date the account was closed, NULL while open.';
+  COMMENT 'Closure date.';
 
 
 -- ============================================================================
--- dim_fx_rate  —  FLAW #9: multi-currency needs an as-of-date join
--- Commercial transactions settle in CAD and GBP. Summing amount across
--- currencies without converting produces a number that does not tie to finance.
+-- dim_fx_rate  —  daily FX rates to USD
 -- ============================================================================
 CREATE OR REPLACE TABLE {{CORE}}.dim_fx_rate
-COMMENT 'Daily FX rates to USD. Transactions in CAD or GBP must be converted using the rate AS OF the transaction date, not the latest rate.'
+COMMENT 'Daily FX rates to USD.'
 AS
 WITH d AS (
   SELECT explode(sequence(DATE'2024-10-01', DATE'2026-09-30', INTERVAL 1 DAY)) AS rate_date
@@ -276,7 +253,7 @@ SELECT
 FROM d CROSS JOIN cur;
 
 ALTER TABLE {{CORE}}.dim_fx_rate ALTER COLUMN usd_rate
-  COMMENT 'Multiply a native-currency amount by this to get USD. Join on BOTH currency AND the transaction date.';
+  COMMENT 'Rate to USD.';
 
 
 -- ----------------------------------------------------------------------------

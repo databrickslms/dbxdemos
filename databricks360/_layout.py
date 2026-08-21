@@ -145,8 +145,7 @@ def setup_ddl(layout: Layout) -> str:
         if layout.is_single_schema:
             cells.append(
                 f"CREATE SCHEMA IF NOT EXISTS {layout.core}\n"
-                "  COMMENT 'Meridian Financial Group teaching dataset — facts, dimensions "
-                "and the deliberately unfit staging objects, all in one schema.';"
+                "  COMMENT 'Meridian Financial Group teaching dataset.';"
             )
         else:
             cells.append(
@@ -161,11 +160,9 @@ def setup_ddl(layout: Layout) -> str:
                 "branch notes, complaint letters.';"
             )
             cells.append(
-                "-- The deliberately awful objects for Modules 7 and 13, kept apart so the\n"
-                '-- "before" and "after" states stay visibly distinct.\n'
+                "-- Raw and superseded objects, kept apart from curated data.\n"
                 f"CREATE SCHEMA IF NOT EXISTS {layout.staging}\n"
-                "  COMMENT 'Deliberately unfit-for-purpose objects used to teach scoping and "
-                "latency. Never point a production agent here.';"
+                "  COMMENT 'Staging: raw and superseded objects. Not intended for reporting.';"
             )
     else:
         listed = ", ".join(f"`{s}`" for s in layout.schemas)
