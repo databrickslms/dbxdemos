@@ -40,11 +40,11 @@ class Course:
 
     @property
     def package(self) -> str:
-        return f"lakehouse_academy.courses.{self.id.replace('-', '_')}"
+        return f"databricks360.courses.{self.id.replace('-', '_')}"
 
 
 def _course_packages() -> list:
-    root = resources.files("lakehouse_academy.courses")
+    root = resources.files("databricks360.courses")
     return sorted(
         p.name
         for p in root.iterdir()
@@ -54,7 +54,7 @@ def _course_packages() -> list:
 
 def _load(pkg_name: str) -> Course:
     raw: dict = json.loads(
-        (resources.files(f"lakehouse_academy.courses.{pkg_name}") / "manifest.json")
+        (resources.files(f"databricks360.courses.{pkg_name}") / "manifest.json")
         .read_text(encoding="utf-8")
     )
     return Course(

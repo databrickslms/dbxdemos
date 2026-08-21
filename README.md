@@ -1,4 +1,4 @@
-# lakehouse-academy
+# databricks360
 
 Installs Databricks course lab environments — notebooks, catalogs, datasets and
 governance objects — into your own workspace.
@@ -16,7 +16,7 @@ Not on PyPI yet, so install from the repo. In a **Databricks notebook**:
 dbutils.library.restartPython()
 ```
 
-Once published, that becomes `%pip install lakehouse-academy`.
+Once published, that becomes `%pip install databricks360`.
 
 To pin a version, append a tag or commit:
 
@@ -27,7 +27,7 @@ To pin a version, append a tag or commit:
 ## Usage
 
 ```python
-import lakehouse_academy as academy
+import databricks360 as academy
 
 academy.list_courses()
 academy.install('genie-agents')
@@ -37,7 +37,7 @@ academy.install('genie-agents')
 Then you open them and run each in turn.
 
 ```
-Installed 'genie-agents' → /Workspace/Users/you@corp.com/lakehouse-academy/genie-agents
+Installed 'genie-agents' → /Workspace/Users/you@corp.com/databricks360/genie-agents
   catalog: mfg    tier: small
 
   Run these in order:
@@ -77,10 +77,10 @@ toy dataset, and nowhere else needs it.
 
 ## Adding a course
 
-Each course is a subpackage under `lakehouse_academy/courses/`:
+Each course is a subpackage under `databricks360/courses/`:
 
 ```
-lakehouse_academy/courses/<course_id>/
+databricks360/courses/<course_id>/
   __init__.py
   manifest.json      # title, default catalog, tiers, notebooks in run order
   *.sql              # synced from content/courses/<id>/assets/lab/
@@ -106,7 +106,7 @@ compromised; the safest token is one that was never created.
 
    | Field | Value |
    |---|---|
-   | PyPI Project Name | `lakehouse-academy` |
+   | PyPI Project Name | `databricks360` |
    | Owner | `databrickslms` |
    | Repository name | `dbxdemos` |
    | Workflow name | `publish.yml` |

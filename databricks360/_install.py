@@ -55,7 +55,7 @@ def _workspace_client():
     except ImportError as exc:  # pragma: no cover
         raise ImportError(
             "databricks-sdk is required. Inside a Databricks notebook run:\n"
-            "    %pip install lakehouse-academy\n"
+            "    %pip install databricks360\n"
             "    dbutils.library.restartPython()"
         ) from exc
     return WorkspaceClient()
@@ -68,7 +68,7 @@ def _default_folder(client, course: Course) -> str:
     except Exception:  # pragma: no cover - offline / unauthenticated
         user = None
     base = f"/Workspace/Users/{user}" if user else "/Workspace/Shared"
-    return f"{base}/lakehouse-academy/{course.id}"
+    return f"{base}/databricks360/{course.id}"
 
 
 def build_notebook_source(
@@ -123,7 +123,7 @@ def install(
 
     client = None if dry_run else _workspace_client()
     folder = path or (
-        f"/Workspace/Shared/lakehouse-academy/{course.id}"
+        f"/Workspace/Shared/databricks360/{course.id}"
         if dry_run
         else _default_folder(client, course)
     )

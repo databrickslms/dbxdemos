@@ -7,10 +7,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import lakehouse_academy as academy
-from lakehouse_academy._catalog import get_course, read_sql
-from lakehouse_academy._install import build_notebook_source, install
-from lakehouse_academy._notebook import (
+import databricks360 as academy
+from databricks360._catalog import get_course, read_sql
+from databricks360._install import build_notebook_source, install
+from databricks360._notebook import (
     CELL_DELIMITER, SQL_HEADER, split_sql_sections, unresolved_placeholders,
 )
 

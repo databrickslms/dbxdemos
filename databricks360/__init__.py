@@ -2,10 +2,10 @@
 
 Run inside a Databricks notebook:
 
-    %pip install lakehouse-academy
+    %pip install databricks360
     dbutils.library.restartPython()
 
-    import lakehouse_academy as academy
+    import databricks360 as academy
     academy.list_courses()
     academy.install('genie-agents')
 
