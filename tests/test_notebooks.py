@@ -92,8 +92,22 @@ def test_banner_splitting_finds_sections():
         assert expected in titles
 
 
+# Every layout must be checked, not just the default. An earlier version of this
+# test only built catalog=None, where create_catalog is False — so the CREATE
+# CATALOG statement was never generated and the spoiler in its COMMENT went
+# unnoticed until someone ran it with create_catalog=True.
+ALL_LAYOUTS = [
+    ("default", dict(catalog=None)),
+    ("named catalog", dict(catalog="main")),
+    ("create catalog", dict(catalog="mfg", create_catalog=True)),
+    ("single schema", dict(schema="training_you")),
+    ("single schema, named catalog", dict(catalog="main", schema="training_you")),
+    ("no volume", dict(catalog="main", create_volume=False)),
+]
+
+
 def test_notebooks_do_not_reveal_the_planted_flaws():
-    """The notebooks must not name what is wrong with the data.
+    """The notebooks must not name what is wrong with the data, in ANY layout.
 
     Lab 0 asks learners to predict the wrong answers an uncurated agent will give,
     and Module 4 asks them to diagnose them. A notebook captioned "FLAW #2" hands
@@ -101,25 +115,31 @@ def test_notebooks_do_not_reveal_the_planted_flaws():
     itself — Genie reads Unity Catalog comments, so it would stop making the
     mistake at all and Module 7 would have nothing left to teach.
     """
-    # Case-insensitive: an earlier version of this test used "FLAW" and missed a
-    # header that said "Plants the four remaining flaws".
     spoilers = [
         "flaw",
-        "never SUM", "NEVER SUM",
+        "never SUM",
         "Do NOT sum",
         "Enable entity matching",
         "Ask which one the user means",
         "Never mix the two",
         "will inflate transaction counts",
-        "deliberate", "on purpose",
+        "deliberate",
+        "on purpose",
         "the scariest",
         "nobody would ever get",
+        "teaching dataset",
     ]
-    for nb in COURSE.notebooks:
-        src = build_notebook_source(COURSE, nb, catalog=None, tier="small")
-        low = src.lower()
-        for phrase in spoilers:
-            assert phrase.lower() not in low, f"{nb.sql} reveals the answer: {phrase!r}"
+    for label, kwargs in ALL_LAYOUTS:
+        layout = resolve_layout(**kwargs)
+        for nb in COURSE.notebooks:
+            src = build_notebook_source(
+                COURSE, nb, catalog=kwargs.get("catalog"), tier="small", layout=layout
+            )
+            low = src.lower()
+            for phrase in spoilers:
+                assert phrase.lower() not in low, (
+                    f"[{label}] {nb.sql} reveals the answer: {phrase!r}"
+                )
 
 
 def test_column_comments_are_terse():
@@ -127,14 +147,18 @@ def test_column_comments_are_terse():
     are course-author voice leaking into production metadata."""
     import re
 
-    for nb in COURSE.notebooks:
-        src = build_notebook_source(COURSE, nb, catalog=None, tier="small")
-        for match in re.finditer(r"COMMENT '([^']+)'", src):
-            body = match.group(1)
-            # The schema-level comments explaining the lab are fine; column
-            # comments are what an agent reads as context.
-            if len(body) > 120 and "teaching dataset" not in body:
-                raise AssertionError(f"{nb.sql}: comment too instructive — {body[:80]}")
+    for label, kwargs in ALL_LAYOUTS:
+        layout = resolve_layout(**kwargs)
+        for nb in COURSE.notebooks:
+            src = build_notebook_source(
+                COURSE, nb, catalog=kwargs.get("catalog"), tier="small", layout=layout
+            )
+            for match in re.finditer(r"COMMENT '([^']+)'", src):
+                body = match.group(1)
+                if len(body) > 120:
+                    raise AssertionError(
+                        f"[{label}] {nb.sql}: comment too instructive — {body[:80]}"
+                    )
 
 
 def test_dry_run_install_needs_no_workspace():

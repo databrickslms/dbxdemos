@@ -123,9 +123,8 @@ def setup_ddl(layout: Layout) -> str:
     if layout.create_catalog:
         cells.append(
             f"CREATE CATALOG IF NOT EXISTS {layout.catalog}\n"
-            "  COMMENT 'Meridian Financial Group — synthetic teaching dataset for the "
-            "Genie Agents course. Contains deliberate data-quality flaws; not a reference "
-            "implementation.';\n"
+            "  COMMENT 'Meridian Financial Group — synthetic dataset for training. "
+            "Not production data.';\n"
             f"USE CATALOG {layout.catalog};"
         )
     elif layout.catalog:
