@@ -1,0 +1,41 @@
+{
+  "id": "genie-agents",
+  "title": "Genie Agents — Meridian Financial Group lab",
+  "description": "A synthetic US bank with nine deliberate data-quality flaws. Every flaw is the raw material for a specific module: gross vs net revenue, a fiscal year starting 1 October, region codes users never say out loud, DECLINED rows inflating counts, two competing product hierarchies, a daily-snapshot table that invites a 30x fan-out, four meanings of 'delinquent', unmasked PII, and multi-currency needing an as-of-date join.",
+  "default_catalog": "mfg",
+  "default_tier": "small",
+  "tiers": {
+    "small": {
+      "description": "20M transactions. Every module except 13. Start here.",
+      "values": { "TXN_COUNT": "20000000" }
+    },
+    "large": {
+      "description": "900M transactions, left unclustered on purpose. Module 13 (latency) only.",
+      "values": { "TXN_COUNT": "900000000" }
+    }
+  },
+  "notebooks": [
+    {
+      "order": 1,
+      "name": "01_catalog_and_schemas",
+      "sql": "01_catalog_and_schemas.sql",
+      "title": "01 · Catalog and schemas",
+      "intro": "Creates the `{{CATALOG}}` catalog, the core / ref / staging schemas, and the documents volume.\n\nRun this first. Everything else depends on it."
+    },
+    {
+      "order": 2,
+      "name": "02_dimensions",
+      "sql": "02_dimensions.sql",
+      "title": "02 · Dimensions",
+      "intro": "Six dimensions, planting five of the nine flaws: the 1 October fiscal year, region and state stored as codes, two competing product hierarchies, unmasked PII, and multi-currency FX rates.\n\nEvery value derives from `hash()` of the row key rather than `rand()`, so your data is byte-identical to everyone else's and the benchmark answers in Module 11 stay valid."
+    },
+    {
+      "order": 3,
+      "name": "03_facts",
+      "sql": "03_facts.sql",
+      "title": "03 · Facts",
+      "intro": "Five fact tables carrying the four remaining flaws.\n\n**This is the slow one** — it generates {{TXN_COUNT}} transactions plus roughly 35M daily loan-balance snapshots. Expect several minutes on a small warehouse.",
+      "slow": true
+    }
+  ]
+}
