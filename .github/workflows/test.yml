@@ -1,0 +1,37 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: python -m pip install -e .
+      - name: Run tests
+        run: python run_tests.py
+      - name: Verify the built wheel ships its SQL
+        run: |
+          python -m pip install --upgrade build
+          python -m build --wheel
+          python - <<'PY'
+          import glob, zipfile
+          names = zipfile.ZipFile(glob.glob("dist/*.whl")[0]).namelist()
+          sql = [n for n in names if n.endswith(".sql")]
+          assert len(sql) >= 3, f"expected the lab SQL in the wheel, found {sql}"
+          assert len(names) == len(set(names)), "duplicate entries in the wheel"
+          print(f"ok: {len(sql)} SQL files, no duplicates")
+          PY

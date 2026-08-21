@@ -29,6 +29,3 @@ dev = ["pytest>=7"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["lakehouse_academy"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"lakehouse_academy/courses" = "lakehouse_academy/courses"

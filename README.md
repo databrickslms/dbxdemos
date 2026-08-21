@@ -92,6 +92,56 @@ than silently rendering empty.
 
 Dataset documentation lives in [`docs/`](docs/).
 
+## Publishing
+
+Releases go to PyPI via **Trusted Publishing** — GitHub Actions authenticates to
+PyPI with a short-lived OIDC identity, so no API token exists in repo secrets or on
+anyone's laptop. A leaked token is the usual way a package supply chain gets
+compromised; the safest token is one that was never created.
+
+### One-time PyPI setup
+
+1. Sign in at [pypi.org](https://pypi.org) → **Your account → Publishing**
+2. Under *Add a new pending publisher*, choose **GitHub** and enter exactly:
+
+   | Field | Value |
+   |---|---|
+   | PyPI Project Name | `lakehouse-academy` |
+   | Owner | `databrickslms` |
+   | Repository name | `dbxdemos` |
+   | Workflow name | `publish.yml` |
+   | Environment name | `pypi` |
+
+3. In GitHub → **Settings → Environments → New environment** → name it `pypi`.
+   Add yourself as a required reviewer if you want to approve each release.
+
+"Pending" publisher is correct — the project does not exist on PyPI yet, and the
+first successful run creates it.
+
+### Cutting a release
+
+```bash
+# bump version in pyproject.toml, commit, then:
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The workflow runs the tests, builds, checks the tag matches `pyproject.toml`, and
+publishes. A mismatched tag fails before anything reaches the index — versions on
+PyPI are immutable, so a wrong number cannot be taken back, only yanked.
+
+### Publishing by hand instead
+
+```bash
+python -m pip install build twine
+python -m build
+twine check dist/*
+twine upload dist/*          # prompts for an API token
+```
+
+Test it against TestPyPI first if you want a dry run:
+`twine upload --repository testpypi dist/*`.
+
 ## Tests
 
 ```bash
