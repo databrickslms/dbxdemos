@@ -11,6 +11,7 @@ import base64
 from dataclasses import dataclass
 
 from ._catalog import Course, Notebook, read_sql
+from ._layout import Layout, resolve as resolve_layout, schema_list_sql, setup_ddl
 from ._notebook import render_template, sql_to_notebook, unresolved_placeholders
 
 
@@ -30,14 +31,25 @@ class Installation:
     catalog: str
     tier: str
     notebooks: list[InstalledNotebook]
+    layout: Layout | None = None
 
     def __repr__(self) -> str:  # what a notebook cell shows
         lines = [
             f"Installed '{self.course_id}' → {self.folder}",
             f"  catalog: {self.catalog}    tier: {self.tier}",
-            "",
-            "  Run these in order:",
         ]
+        if self.layout:
+            lines.append(f"  {self.layout.describe()}")
+            skipped = [
+                label for label, on in (
+                    ("CREATE CATALOG", self.layout.create_catalog),
+                    ("CREATE SCHEMA", self.layout.create_schema),
+                    ("CREATE VOLUME", self.layout.create_volume),
+                ) if not on
+            ]
+            if skipped:
+                lines.append(f"  skipping: {', '.join(skipped)}")
+        lines += ["", "  Run these in order:"]
         for nb in self.notebooks:
             flags = []
             if nb.slow:
@@ -77,13 +89,24 @@ def build_notebook_source(
     *,
     catalog: str,
     tier: str,
+    layout: Layout | None = None,
 ) -> str:
     """Render one notebook's source. Pure — no workspace calls, so it is testable."""
     if tier not in course.tiers and course.tiers:
         known = ", ".join(sorted(course.tiers))
         raise ValueError(f"Unknown tier {tier!r} for {course.id}. Available: {known}")
 
-    values = {"CATALOG": catalog, "TIER": tier}
+    layout = layout or resolve_layout(catalog=catalog)
+
+    values = {
+        "CATALOG": layout.catalog,
+        "CORE": layout.core,
+        "REF": layout.ref,
+        "STAGING": layout.staging,
+        "SCHEMA_LIST": schema_list_sql(layout),
+        "SETUP_DDL": setup_ddl(layout),
+        "TIER": tier,
+    }
     if course.tiers:
         values.update(course.tiers[tier].values)
 
@@ -105,7 +128,11 @@ def install(
     *,
     path: str | None = None,
     catalog: str | None = None,
+    schema: str | None = None,
     tier: str | None = None,
+    create_catalog: bool | None = None,
+    create_schema: bool | None = None,
+    create_volume: bool = True,
     overwrite: bool = False,
     dry_run: bool = False,
 ) -> Installation:
@@ -114,12 +141,30 @@ def install(
     Notebooks are written but never executed. Data generation is deliberate work
     on the learner's warehouse, and Module 0 of the course is partly about
     watching it happen rather than having it appear.
+
+    For a restricted Unity Catalog:
+
+        # cannot create catalogs, but can create schemas in one you were given
+        install('genie-agents', catalog='main', create_catalog=False)
+
+        # only one schema, already provisioned for you
+        install('genie-agents', catalog='main', schema='training_you')
+
+    Passing `schema` puts every object in that one schema and assumes you can
+    create neither the catalog nor the schema, since that is why you would use it.
     """
     from ._catalog import get_course
 
     course = get_course(course_id)
     catalog = catalog or course.default_catalog
     tier = tier or course.default_tier
+    layout = resolve_layout(
+        catalog=catalog,
+        schema=schema,
+        create_catalog=create_catalog,
+        create_schema=create_schema,
+        create_volume=create_volume,
+    )
 
     client = None if dry_run else _workspace_client()
     folder = path or (
@@ -137,7 +182,7 @@ def install(
         client.workspace.mkdirs(folder)
 
     for nb in course.notebooks:
-        source = build_notebook_source(course, nb, catalog=catalog, tier=tier)
+        source = build_notebook_source(course, nb, catalog=catalog, tier=tier, layout=layout)
         target = f"{folder}/{nb.name}"
 
         if not dry_run:
@@ -158,5 +203,5 @@ def install(
 
     return Installation(
         course_id=course.id, folder=folder, catalog=catalog,
-        tier=tier, notebooks=installed,
+        tier=tier, notebooks=installed, layout=layout,
     )

@@ -18,8 +18,9 @@ from __future__ import annotations
 
 from ._catalog import Course, available_courses, get_course
 from ._install import Installation, build_notebook_source, install
+from ._layout import Layout, resolve as resolve_layout
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = [
     "install",
     "list_courses",
@@ -28,6 +29,8 @@ __all__ = [
     "build_notebook_source",
     "Course",
     "Installation",
+    "Layout",
+    "resolve_layout",
     "__version__",
 ]
 

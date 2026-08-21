@@ -17,7 +17,7 @@
 -- ============================================================================
 -- fct_transactions  —  FLAWS #1, #4, #9
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CATALOG}}.core.fct_transactions
+CREATE OR REPLACE TABLE {{CORE}}.fct_transactions
 COMMENT 'Transaction-level fact. fee_revenue is GROSS - it does NOT deduct reversals, which live in fct_reversals. Only status = POSTED is revenue; DECLINED rows exist and will inflate transaction counts if not excluded.'
 AS
 WITH t AS (
@@ -80,18 +80,18 @@ SELECT
        ELSE 'USD' END                                           AS currency,
   s.status
 FROM shaped s
-JOIN {{CATALOG}}.core.dim_account  a ON a.account_id  = s.account_id
-JOIN {{CATALOG}}.core.dim_customer c ON c.customer_id = a.customer_id;
+JOIN {{CORE}}.dim_account  a ON a.account_id  = s.account_id
+JOIN {{CORE}}.dim_customer c ON c.customer_id = a.customer_id;
 
-ALTER TABLE {{CATALOG}}.core.fct_transactions ALTER COLUMN fee_revenue
+ALTER TABLE {{CORE}}.fct_transactions ALTER COLUMN fee_revenue
   COMMENT 'GROSS fee revenue in the transaction currency, before reversals and chargebacks. Do NOT sum this column alone and call it revenue - subtract fct_reversals.reversal_amount. Zero for non-POSTED rows.';
-ALTER TABLE {{CATALOG}}.core.fct_transactions ALTER COLUMN status
+ALTER TABLE {{CORE}}.fct_transactions ALTER COLUMN status
   COMMENT 'Transaction status. Values: POSTED, PENDING, DECLINED, REVERSED. ONLY POSTED counts as revenue. DECLINED rows are ~6% of the table and will inflate transaction counts if not filtered out.';
-ALTER TABLE {{CATALOG}}.core.fct_transactions ALTER COLUMN currency
+ALTER TABLE {{CORE}}.fct_transactions ALTER COLUMN currency
   COMMENT 'Settlement currency. Values: USD, CAD, GBP. COMMERCIAL customers transact in all three. Convert with dim_fx_rate joined on currency AND txn_date before summing across currencies.';
-ALTER TABLE {{CATALOG}}.core.fct_transactions ALTER COLUMN amount
+ALTER TABLE {{CORE}}.fct_transactions ALTER COLUMN amount
   COMMENT 'Transaction amount in the settlement currency (see currency column), not USD.';
-ALTER TABLE {{CATALOG}}.core.fct_transactions ALTER COLUMN merchant_category
+ALTER TABLE {{CORE}}.fct_transactions ALTER COLUMN merchant_category
   COMMENT 'Merchant category. 12 distinct values - a good candidate for entity matching.';
 
 
@@ -100,7 +100,7 @@ ALTER TABLE {{CATALOG}}.core.fct_transactions ALTER COLUMN merchant_category
 -- Deliberately a SEPARATE table. If reversals were a column on
 -- fct_transactions nobody would ever get gross vs net wrong.
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CATALOG}}.core.fct_reversals
+CREATE OR REPLACE TABLE {{CORE}}.fct_reversals
 COMMENT 'Reversals and chargebacks. The amount here must be SUBTRACTED from fct_transactions.fee_revenue to get net fee revenue. One row per reversed transaction.'
 AS
 SELECT
@@ -109,15 +109,15 @@ SELECT
   cast(round(t.fee_revenue, 2) AS DECIMAL(14,2))                         AS reversal_amount,
   element_at(array('DISPUTE','FRAUD','DUPLICATE','MERCHANT_ERROR','AUTHORISATION_FAIL'),
              pmod(hash(concat('rev-reason-', t.txn_id)), 5) + 1)         AS reason_code
-FROM {{CATALOG}}.core.fct_transactions t
+FROM {{CORE}}.fct_transactions t
 -- ~3.5% of POSTED transactions get reversed, which is why "revenue" is
 -- overstated by a few percent and nobody notices.
 WHERE t.status = 'POSTED'
   AND pmod(hash(concat('rev-flag-', t.txn_id)), 1000) < 35;
 
-ALTER TABLE {{CATALOG}}.core.fct_reversals ALTER COLUMN reversal_amount
+ALTER TABLE {{CORE}}.fct_reversals ALTER COLUMN reversal_amount
   COMMENT 'Fee revenue clawed back. Subtract the sum of this from gross fee_revenue to get NET fee revenue.';
-ALTER TABLE {{CATALOG}}.core.fct_reversals ALTER COLUMN reason_code
+ALTER TABLE {{CORE}}.fct_reversals ALTER COLUMN reason_code
   COMMENT 'Reversal reason. Values: DISPUTE, FRAUD, DUPLICATE, MERCHANT_ERROR, AUTHORISATION_FAIL.';
 
 
@@ -130,13 +130,13 @@ ALTER TABLE {{CATALOG}}.core.fct_reversals ALTER COLUMN reason_code
 --
 -- 45,000 lending accounts x 730 days ~ 32.8M rows (~1.4M per month).
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CATALOG}}.core.fct_loan_balances
+CREATE OR REPLACE TABLE {{CORE}}.fct_loan_balances
 COMMENT 'DAILY SNAPSHOT of the loan book: one row per account per day. NEVER SUM principal_balance across dates - use the latest snapshot for a point-in-time balance, or an average for a period. Also carries the four distinct delinquency concepts.'
 AS
 WITH loan_accounts AS (
   SELECT a.account_id, a.opened_date
-  FROM {{CATALOG}}.core.dim_account a
-  JOIN {{CATALOG}}.core.dim_product p ON p.product_id = a.product_id
+  FROM {{CORE}}.dim_account a
+  JOIN {{CORE}}.dim_product p ON p.product_id = a.product_id
   WHERE p.product_category = 'LENDING'
     AND pmod(hash(concat('loan-pick-', a.account_id)), 100) < 6   -- ~6% sample
 ),
@@ -191,20 +191,20 @@ SELECT
   END AS loan_status
 FROM shaped;
 
-ALTER TABLE {{CATALOG}}.core.fct_loan_balances ALTER COLUMN principal_balance
+ALTER TABLE {{CORE}}.fct_loan_balances ALTER COLUMN principal_balance
   COMMENT 'Outstanding principal AS OF snapshot_date. This table has ONE ROW PER ACCOUNT PER DAY - never SUM across dates. For a point-in-time loan book, filter to the latest snapshot_date.';
-ALTER TABLE {{CATALOG}}.core.fct_loan_balances ALTER COLUMN days_past_due
+ALTER TABLE {{CORE}}.fct_loan_balances ALTER COLUMN days_past_due
   COMMENT 'Days past due as of snapshot_date. 0 means current.';
-ALTER TABLE {{CATALOG}}.core.fct_loan_balances ALTER COLUMN dpd_bucket
+ALTER TABLE {{CORE}}.fct_loan_balances ALTER COLUMN dpd_bucket
   COMMENT 'Delinquency bucket. Values: CURRENT, 1-29, 30-59, 60-89, 90+. Meridian defines "delinquent" as 30+ days past due and "seriously delinquent" as 90+. Ask which one the user means.';
-ALTER TABLE {{CATALOG}}.core.fct_loan_balances ALTER COLUMN loan_status
+ALTER TABLE {{CORE}}.fct_loan_balances ALTER COLUMN loan_status
   COMMENT 'Accounting lifecycle status, DISTINCT from dpd_bucket. Values: PERFORMING, DELINQUENT, DEFAULT, CHARGED_OFF. "Default" and "charge-off" are accounting events and are NOT the same as being 30+ or 90+ days past due.';
 
 
 -- ============================================================================
 -- fct_applications  —  approval funnel and cycle time
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CATALOG}}.core.fct_applications
+CREATE OR REPLACE TABLE {{CORE}}.fct_applications
 COMMENT 'Credit application funnel: submitted -> decisioned -> funded. Approval rate is decisions of APPROVED over all applications. Not every approved application is funded.'
 AS
 WITH ap AS (SELECT id AS n FROM range(1, 420001)),
@@ -238,18 +238,18 @@ SELECT
        ELSE                     'BROKER' END                AS channel
 FROM calc;
 
-ALTER TABLE {{CATALOG}}.core.fct_applications ALTER COLUMN decision
+ALTER TABLE {{CORE}}.fct_applications ALTER COLUMN decision
   COMMENT 'Underwriting decision. Values: APPROVED, DECLINED, WITHDRAWN. Approval rate = APPROVED / all applications, including WITHDRAWN.';
-ALTER TABLE {{CATALOG}}.core.fct_applications ALTER COLUMN funded_ts
+ALTER TABLE {{CORE}}.fct_applications ALTER COLUMN funded_ts
   COMMENT 'When the loan was actually funded. NULL if never funded - roughly 18% of APPROVED applications are never drawn down, so funded count < approved count.';
-ALTER TABLE {{CATALOG}}.core.fct_applications ALTER COLUMN channel
+ALTER TABLE {{CORE}}.fct_applications ALTER COLUMN channel
   COMMENT 'Origination channel. Values: DIGITAL, BRANCH, CALL_CENTRE, BROKER.';
 
 
 -- ============================================================================
 -- fct_fraud_cases
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CATALOG}}.core.fct_fraud_cases
+CREATE OR REPLACE TABLE {{CORE}}.fct_fraud_cases
 COMMENT 'Fraud and financial-crime cases. loss_amount is the realised loss in USD, zero for cases closed without loss.'
 AS
 WITH f AS (SELECT id AS n FROM range(1, 14001)),
@@ -278,18 +278,18 @@ SELECT
   CASE WHEN stat_pick < 84 THEN 'CLOSED' ELSE 'OPEN' END   AS status
 FROM calc;
 
-ALTER TABLE {{CATALOG}}.core.fct_fraud_cases ALTER COLUMN fraud_type
+ALTER TABLE {{CORE}}.fct_fraud_cases ALTER COLUMN fraud_type
   COMMENT 'Fraud typology. Values: CARD_NOT_PRESENT, ACCOUNT_TAKEOVER, APPLICATION_FRAUD, CHECK_FRAUD, WIRE_FRAUD, FIRST_PARTY.';
-ALTER TABLE {{CATALOG}}.core.fct_fraud_cases ALTER COLUMN loss_amount
+ALTER TABLE {{CORE}}.fct_fraud_cases ALTER COLUMN loss_amount
   COMMENT 'Realised loss in USD. Zero for cases closed with no loss - about 38% of cases.';
 
 
 -- ----------------------------------------------------------------------------
 -- Row counts
 -- ----------------------------------------------------------------------------
-SELECT 'fct_transactions'  AS table_name, count(*) AS rows FROM {{CATALOG}}.core.fct_transactions
-UNION ALL SELECT 'fct_reversals',      count(*) FROM {{CATALOG}}.core.fct_reversals
-UNION ALL SELECT 'fct_loan_balances',  count(*) FROM {{CATALOG}}.core.fct_loan_balances
-UNION ALL SELECT 'fct_applications',   count(*) FROM {{CATALOG}}.core.fct_applications
-UNION ALL SELECT 'fct_fraud_cases',    count(*) FROM {{CATALOG}}.core.fct_fraud_cases
+SELECT 'fct_transactions'  AS table_name, count(*) AS rows FROM {{CORE}}.fct_transactions
+UNION ALL SELECT 'fct_reversals',      count(*) FROM {{CORE}}.fct_reversals
+UNION ALL SELECT 'fct_loan_balances',  count(*) FROM {{CORE}}.fct_loan_balances
+UNION ALL SELECT 'fct_applications',   count(*) FROM {{CORE}}.fct_applications
+UNION ALL SELECT 'fct_fraud_cases',    count(*) FROM {{CORE}}.fct_fraud_cases
 ORDER BY table_name;

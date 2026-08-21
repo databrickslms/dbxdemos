@@ -23,7 +23,7 @@
 -- FY2026 = 2025-10-01 .. 2026-09-30
 -- Two complete fiscal years, so "this year vs last year" questions work.
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CATALOG}}.core.dim_date
+CREATE OR REPLACE TABLE {{CORE}}.dim_date
 COMMENT 'Calendar with Meridian fiscal attributes. Meridian fiscal year starts 1 October: FY2026 = 2025-10-01 to 2026-09-30. Fiscal and calendar columns are both present and will disagree.'
 AS
 WITH d AS (
@@ -61,15 +61,15 @@ SELECT
   END                                                                 AS is_business_day
 FROM calc;
 
-ALTER TABLE {{CATALOG}}.core.dim_date ALTER COLUMN date_key
+ALTER TABLE {{CORE}}.dim_date ALTER COLUMN date_key
   COMMENT 'Calendar date. One row per day.';
-ALTER TABLE {{CATALOG}}.core.dim_date ALTER COLUMN fiscal_year
+ALTER TABLE {{CORE}}.dim_date ALTER COLUMN fiscal_year
   COMMENT 'Meridian fiscal year, format FY2026. The fiscal year STARTS 1 OCTOBER, so FY2026 runs 2025-10-01 to 2026-09-30. "Last year" means the prior FISCAL year unless the user says "calendar year".';
-ALTER TABLE {{CATALOG}}.core.dim_date ALTER COLUMN fiscal_quarter
+ALTER TABLE {{CORE}}.dim_date ALTER COLUMN fiscal_quarter
   COMMENT 'Meridian fiscal quarter, format FY2026-Q3. Q1 = Oct-Dec, Q2 = Jan-Mar, Q3 = Apr-Jun, Q4 = Jul-Sep.';
-ALTER TABLE {{CATALOG}}.core.dim_date ALTER COLUMN calendar_year
+ALTER TABLE {{CORE}}.dim_date ALTER COLUMN calendar_year
   COMMENT 'Calendar year. Use ONLY when the user explicitly asks for calendar periods; otherwise use fiscal_year.';
-ALTER TABLE {{CATALOG}}.core.dim_date ALTER COLUMN is_business_day
+ALTER TABLE {{CORE}}.dim_date ALTER COLUMN is_business_day
   COMMENT 'False for weekends and fixed-date US federal holidays.';
 
 
@@ -79,7 +79,7 @@ ALTER TABLE {{CATALOG}}.core.dim_date ALTER COLUMN is_business_day
 -- The table holds NE, WEST, CA. Without entity matching, Genie filters on the
 -- spoken form, matches nothing, and returns a confident zero.
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CATALOG}}.core.dim_branch
+CREATE OR REPLACE TABLE {{CORE}}.dim_branch
 COMMENT 'Meridian branch network, 340 branches. Region and state are stored as SHORT CODES, not the names people say out loud.'
 AS
 WITH b AS (SELECT id AS n FROM range(1, 341)),
@@ -115,11 +115,11 @@ SELECT
   date_add(DATE'2006-01-01', open_offset) AS opened_date
 FROM assigned;
 
-ALTER TABLE {{CATALOG}}.core.dim_branch ALTER COLUMN region
+ALTER TABLE {{CORE}}.dim_branch ALTER COLUMN region
   COMMENT 'Sales region CODE. Values: NE, SE, MW, WEST. Users say "Northeast" (NE), "Southeast" (SE), "Midwest" (MW), "the West" or "West Coast" (WEST).';
-ALTER TABLE {{CATALOG}}.core.dim_branch ALTER COLUMN state
+ALTER TABLE {{CORE}}.dim_branch ALTER COLUMN state
   COMMENT 'Two-letter US state CODE, e.g. CA, NY, TX. Users say the full state name ("California"). Enable entity matching on this column.';
-ALTER TABLE {{CATALOG}}.core.dim_branch ALTER COLUMN channel
+ALTER TABLE {{CORE}}.dim_branch ALTER COLUMN channel
   COMMENT 'Branch servicing model. Values: RETAIL, COMMERCIAL, PRIVATE_CLIENT.';
 
 
@@ -130,7 +130,7 @@ ALTER TABLE {{CATALOG}}.core.dim_branch ALTER COLUMN channel
 -- Both are correct. Leaving both visible produces two different answers to
 -- "revenue by product", and nobody can tell which one they got.
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CATALOG}}.core.dim_product
+CREATE OR REPLACE TABLE {{CORE}}.dim_product
 COMMENT 'Product master. Carries TWO hierarchies that do not align: product_category (business view) and regulatory_product_class (Basel reporting view). Expose only one to an agent.'
 AS
 SELECT * FROM VALUES
@@ -156,9 +156,9 @@ SELECT * FROM VALUES
   ('P20','Traditional IRA',              'WEALTH','OFF_BALANCE_SHEET')
 AS t(product_id, product_name, product_category, regulatory_product_class);
 
-ALTER TABLE {{CATALOG}}.core.dim_product ALTER COLUMN product_category
+ALTER TABLE {{CORE}}.dim_product ALTER COLUMN product_category
   COMMENT 'BUSINESS product hierarchy. Values: DEPOSITS, CARDS, LENDING, WEALTH. This is the one business users mean by "product". Prefer this and hide regulatory_product_class.';
-ALTER TABLE {{CATALOG}}.core.dim_product ALTER COLUMN regulatory_product_class
+ALTER TABLE {{CORE}}.dim_product ALTER COLUMN regulatory_product_class
   COMMENT 'REGULATORY (Basel) product hierarchy used for capital reporting. Does NOT align with product_category - a Debit Card is CARDS here but RETAIL_DEPOSIT there. Never mix the two in one rollup.';
 
 
@@ -171,7 +171,7 @@ ALTER TABLE {{CATALOG}}.core.dim_product ALTER COLUMN regulatory_product_class
 -- Every value is synthetic. Emails use example.com (RFC 2606 reserved) and
 -- ssn_last4 is a hashed 4-digit string, not derived from anything real.
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CATALOG}}.core.dim_customer
+CREATE OR REPLACE TABLE {{CORE}}.dim_customer
 COMMENT 'Retail and commercial customers, 2.1M rows. CONTAINS PII: ssn_last4, email, dob, annual_income. All values are synthetic. Protect with Unity Catalog column masks, never with agent instructions.'
 AS
 WITH c AS (SELECT id AS n FROM range(1, 2100001)),
@@ -201,17 +201,17 @@ SELECT
   cast(25000 + inc_pick * 1250 AS DECIMAL(12,2)) AS annual_income
 FROM calc;
 
-ALTER TABLE {{CATALOG}}.core.dim_customer ALTER COLUMN segment
+ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN segment
   COMMENT 'Customer segment. Values: MASS, AFFLUENT, PRIVATE, COMMERCIAL.';
-ALTER TABLE {{CATALOG}}.core.dim_customer ALTER COLUMN tenure_months
+ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN tenure_months
   COMMENT 'Months since the customer relationship began, as of 2026-09-30.';
-ALTER TABLE {{CATALOG}}.core.dim_customer ALTER COLUMN ssn_last4
+ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN ssn_last4
   COMMENT 'PII. Last four digits of tax identifier (synthetic). Must be masked. Never expose in an answer.';
-ALTER TABLE {{CATALOG}}.core.dim_customer ALTER COLUMN email
+ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN email
   COMMENT 'PII. Contact email (synthetic, example.com). Must be masked. Never expose in an answer.';
-ALTER TABLE {{CATALOG}}.core.dim_customer ALTER COLUMN dob
+ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN dob
   COMMENT 'PII. Date of birth (synthetic). Must be masked. Use age bands for analysis instead.';
-ALTER TABLE {{CATALOG}}.core.dim_customer ALTER COLUMN annual_income
+ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN annual_income
   COMMENT 'PII. Self-reported annual income in USD (synthetic). Restricted - finance roles only.';
 
 
@@ -220,7 +220,7 @@ ALTER TABLE {{CATALOG}}.core.dim_customer ALTER COLUMN annual_income
 -- Every fact joins to a dimension THROUGH this table. Getting its cardinality
 -- wrong is how "revenue by region" quietly multiplies (Module 9).
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CATALOG}}.core.dim_account
+CREATE OR REPLACE TABLE {{CORE}}.dim_account
 COMMENT 'Account master, ~2.9M rows. The join hub: transactions and balances reach customer, branch and product through this table.'
 AS
 WITH a AS (SELECT id AS n FROM range(1, 2900001)),
@@ -246,9 +246,9 @@ SELECT
   CASE WHEN status_pick < 8 THEN 'CLOSED' ELSE 'OPEN' END    AS status
 FROM calc;
 
-ALTER TABLE {{CATALOG}}.core.dim_account ALTER COLUMN status
+ALTER TABLE {{CORE}}.dim_account ALTER COLUMN status
   COMMENT 'Account status. Values: OPEN, CLOSED. Roughly 8% are CLOSED. Exclude CLOSED accounts from "active customer" style questions.';
-ALTER TABLE {{CATALOG}}.core.dim_account ALTER COLUMN closed_date
+ALTER TABLE {{CORE}}.dim_account ALTER COLUMN closed_date
   COMMENT 'Date the account was closed, NULL while open.';
 
 
@@ -257,7 +257,7 @@ ALTER TABLE {{CATALOG}}.core.dim_account ALTER COLUMN closed_date
 -- Commercial transactions settle in CAD and GBP. Summing amount across
 -- currencies without converting produces a number that does not tie to finance.
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CATALOG}}.core.dim_fx_rate
+CREATE OR REPLACE TABLE {{CORE}}.dim_fx_rate
 COMMENT 'Daily FX rates to USD. Transactions in CAD or GBP must be converted using the rate AS OF the transaction date, not the latest rate.'
 AS
 WITH d AS (
@@ -275,17 +275,17 @@ SELECT
   END AS usd_rate
 FROM d CROSS JOIN cur;
 
-ALTER TABLE {{CATALOG}}.core.dim_fx_rate ALTER COLUMN usd_rate
+ALTER TABLE {{CORE}}.dim_fx_rate ALTER COLUMN usd_rate
   COMMENT 'Multiply a native-currency amount by this to get USD. Join on BOTH currency AND the transaction date.';
 
 
 -- ----------------------------------------------------------------------------
 -- Row counts
 -- ----------------------------------------------------------------------------
-SELECT 'dim_date'     AS table_name, count(*) AS rows FROM {{CATALOG}}.core.dim_date
-UNION ALL SELECT 'dim_branch',   count(*) FROM {{CATALOG}}.core.dim_branch
-UNION ALL SELECT 'dim_product',  count(*) FROM {{CATALOG}}.core.dim_product
-UNION ALL SELECT 'dim_customer', count(*) FROM {{CATALOG}}.core.dim_customer
-UNION ALL SELECT 'dim_account',  count(*) FROM {{CATALOG}}.core.dim_account
-UNION ALL SELECT 'dim_fx_rate',  count(*) FROM {{CATALOG}}.core.dim_fx_rate
+SELECT 'dim_date'     AS table_name, count(*) AS rows FROM {{CORE}}.dim_date
+UNION ALL SELECT 'dim_branch',   count(*) FROM {{CORE}}.dim_branch
+UNION ALL SELECT 'dim_product',  count(*) FROM {{CORE}}.dim_product
+UNION ALL SELECT 'dim_customer', count(*) FROM {{CORE}}.dim_customer
+UNION ALL SELECT 'dim_account',  count(*) FROM {{CORE}}.dim_account
+UNION ALL SELECT 'dim_fx_rate',  count(*) FROM {{CORE}}.dim_fx_rate
 ORDER BY table_name;

@@ -111,3 +111,89 @@ def test_dry_run_install_needs_no_workspace():
     rendered = repr(result)
     assert "Run these in order" in rendered
     assert "slow" in rendered, "the facts notebook should be flagged slow"
+
+
+# ── Restricted Unity Catalog layouts ─────────────────────────────────────────
+# A locked-down metastore is the norm in regulated environments, so all three
+# shapes are covered: full control, no CREATE CATALOG, and one schema only.
+
+from databricks360._layout import resolve as resolve_layout, setup_ddl
+
+
+def test_default_layout_creates_catalog_and_three_schemas():
+    src = build_notebook_source(COURSE, COURSE.notebooks[0], catalog="mfg", tier="small")
+    assert "CREATE CATALOG IF NOT EXISTS mfg" in src
+    assert "CREATE SCHEMA IF NOT EXISTS mfg.core" in src
+    assert "CREATE SCHEMA IF NOT EXISTS mfg.ref" in src
+    assert "CREATE SCHEMA IF NOT EXISTS mfg.staging" in src
+    assert "CREATE VOLUME IF NOT EXISTS mfg.ref.documents" in src
+
+
+def test_no_create_catalog_privilege():
+    layout = resolve_layout(catalog="main", create_catalog=False)
+    src = build_notebook_source(COURSE, COURSE.notebooks[0], catalog="main", tier="small", layout=layout)
+    # The header documents all three layouts, so match the statement, not the phrase.
+    assert "CREATE CATALOG IF NOT EXISTS" not in src
+    assert "Skipping CREATE CATALOG" in src
+    # Schemas are still created inside the catalog we were given.
+    assert "CREATE SCHEMA IF NOT EXISTS main.core" in src
+
+
+def test_single_schema_layout_collapses_everything():
+    layout = resolve_layout(catalog="main", schema="training_you")
+    for nb in COURSE.notebooks:
+        src = build_notebook_source(COURSE, nb, catalog="main", tier="small", layout=layout)
+        assert unresolved_placeholders(src) == [], nb.sql
+        # No three-level path may reference a schema we were never given.
+        for forbidden in ["main.core.", "main.ref.", "main.staging."]:
+            assert forbidden not in src, f"{nb.sql} still references {forbidden}"
+
+    facts = build_notebook_source(COURSE, COURSE.notebooks[2], catalog="main", tier="small", layout=layout)
+    assert "main.training_you.fct_transactions" in facts
+    assert "main.training_you.dim_account" in facts
+
+
+def test_single_schema_skips_ddl_it_cannot_run():
+    layout = resolve_layout(catalog="main", schema="training_you")
+    src = build_notebook_source(COURSE, COURSE.notebooks[0], catalog="main", tier="small", layout=layout)
+    assert "Skipping CREATE CATALOG" in src
+    assert "Skipping CREATE SCHEMA" in src
+    # The volume still lands in the one schema we do own.
+    assert "CREATE VOLUME IF NOT EXISTS main.training_you.documents" in src
+
+
+def test_create_volume_can_be_declined():
+    layout = resolve_layout(catalog="main", schema="training_you", create_volume=False)
+    src = build_notebook_source(COURSE, COURSE.notebooks[0], catalog="main", tier="small", layout=layout)
+    assert "CREATE VOLUME IF NOT EXISTS" not in src
+    assert "Modules 3 and 16" in src, "should say what is lost by skipping it"
+
+
+def test_verify_query_lists_the_right_schemas():
+    multi = build_notebook_source(COURSE, COURSE.notebooks[0], catalog="mfg", tier="small")
+    assert "'core', 'ref', 'staging'" in multi
+    single = build_notebook_source(
+        COURSE, COURSE.notebooks[0], catalog="main", tier="small",
+        layout=resolve_layout(catalog="main", schema="training_you"),
+    )
+    assert "'training_you'" in single
+
+
+def test_qualified_names_are_rejected():
+    for bad in [{"catalog": "main.core"}, {"catalog": "main", "schema": "a.b"}]:
+        try:
+            resolve_layout(**bad)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"{bad} should have been rejected")
+
+
+def test_install_reports_what_it_skipped():
+    result = install(
+        "genie-agents", dry_run=True, catalog="main", schema="training_you", create_volume=False,
+    )
+    rendered = repr(result)
+    assert "single schema: main.training_you" in rendered
+    assert "CREATE CATALOG" in rendered and "CREATE SCHEMA" in rendered
+    assert "CREATE VOLUME" in rendered

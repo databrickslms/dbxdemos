@@ -65,6 +65,70 @@ not. Generating the data is the substance of Module 0 — the point is to watch 
 warehouse chew through 20M rows and see the flaws appear, not to have a finished
 catalog materialise. It also means nothing consumes your DBUs without you asking.
 
+## Regulated environments
+
+A locked-down Unity Catalog is the norm in regulated organisations, so the lab fits
+three shapes rather than assuming it owns a metastore.
+
+### 1. Full control (default)
+
+```python
+academy.install('genie-agents')
+```
+
+Creates the `mfg` catalog and `core` / `ref` / `staging` schemas inside it.
+
+### 2. No CREATE CATALOG privilege
+
+```python
+academy.install('genie-agents', catalog='main', create_catalog=False)
+```
+
+Creates the three schemas inside a catalog you were already granted. Notebook 01
+skips the catalog statement and says so, rather than failing on it.
+
+### 3. One schema, already provisioned for you
+
+```python
+academy.install('genie-agents', catalog='main', schema='training_you')
+```
+
+Everything lands in `main.training_you`. **Nothing is renamed** — `core` holds the
+dimensions and facts, `ref` holds only the documents volume, and `staging` holds only
+the two decoy tables, so the three sets of object names do not overlap and collapsing
+them is safe.
+
+Passing `schema` assumes you can create neither the catalog nor the schema, since
+that is the reason to reach for it. Override with `create_catalog=True` or
+`create_schema=True` if you can.
+
+### No CREATE VOLUME either
+
+```python
+academy.install('genie-agents', catalog='main', schema='training_you', create_volume=False)
+```
+
+The volume is only used for Agent mode over unstructured files (Modules 3 and 16).
+Skipping it costs you those exercises and nothing else.
+
+### What you get back
+
+`install` reports the resolved layout and anything it decided to skip, so a
+restricted install is visible rather than silent:
+
+```
+Installed 'genie-agents' → /Workspace/Users/you@corp.com/databricks360/genie-agents
+  catalog: main    tier: small
+  single schema: main.training_you
+  skipping: CREATE CATALOG, CREATE SCHEMA, CREATE VOLUME
+```
+
+Notebooks 02 onward resolve their own paths, so they need no changes whichever
+layout you used.
+
+> **Unity Catalog is required.** Genie Agents read Unity Catalog objects, so
+> `hive_metastore` will not work as the target catalog.
+
 ## Tiers
 
 | Tier | Transactions | Use |
