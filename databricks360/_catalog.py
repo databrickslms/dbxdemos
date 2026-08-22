@@ -33,7 +33,10 @@ class Course:
     id: str
     title: str
     description: str
-    default_catalog: str
+    # The course's own naming. install() uses these unless overridden, so the
+    # plain call produces the layout the course actually expects.
+    default_schema: str | None
+    default_table_prefix: str | None
     notebooks: list = field(default_factory=list)
     tiers: dict = field(default_factory=dict)
     default_tier: str = "small"
@@ -61,7 +64,8 @@ def _load(pkg_name: str) -> Course:
         id=raw["id"],
         title=raw["title"],
         description=raw.get("description", ""),
-        default_catalog=raw.get("default_catalog", "main"),
+        default_schema=raw.get("default_schema"),
+        default_table_prefix=raw.get("default_table_prefix"),
         default_tier=raw.get("default_tier", "small"),
         notebooks=[
             Notebook(

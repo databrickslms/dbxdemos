@@ -99,7 +99,15 @@ def build_notebook_source(
         known = ", ".join(sorted(course.tiers))
         raise ValueError(f"Unknown tier {tier!r} for {course.id}. Available: {known}")
 
-    layout = layout or resolve_layout(catalog=catalog)
+    # Fall back to the course's own naming, so this agrees with install(). Two
+    # entry points resolving different layouts would mean the tests validate a
+    # shape that never actually ships.
+    if layout is None:
+        layout = resolve_layout(
+            catalog=catalog,
+            schema=course.default_schema,
+            table_prefix=course.default_table_prefix,
+        )
 
     values = {
         "CATALOG": layout.catalog or "current_catalog()",
@@ -171,8 +179,11 @@ def install(
 
     course = get_course(course_id)
     tier = tier or course.default_tier
-    # catalog=None means the session's current catalog. The manifest's
-    # default_catalog is only a suggestion for people who can create one.
+    # The course's own naming wins unless the caller overrides it. catalog stays
+    # None -> the session's current catalog, which needs no privilege.
+    if schema is None and table_prefix is None:
+        schema = course.default_schema
+        table_prefix = course.default_table_prefix
     layout = resolve_layout(
         catalog=catalog,
         schema=schema,

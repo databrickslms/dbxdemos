@@ -2,7 +2,8 @@
   "id": "genie-agents",
   "title": "Genie Agents — Meridian Financial Group lab",
   "description": "Meridian Financial Group: a synthetic US bank — transactions, reversals, a daily loan book, credit applications and fraud cases across 2.1M customers and 340 branches, over two fiscal years. Built for the Genie Agents course. The data is realistic rather than clean, on purpose; do not tidy it up before the course tells you to.",
-  "default_catalog": "mfg",
+  "default_schema": "genie_agent",
+  "default_table_prefix": "mfg_",
   "default_tier": "small",
   "tiers": {
     "small": {

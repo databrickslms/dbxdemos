@@ -19,7 +19,9 @@ COURSE = get_course("genie-agents")
 
 def test_course_loads():
     assert COURSE.id == "genie-agents"
-    assert COURSE.default_catalog == "mfg"
+    # The course's own naming, applied by a bare install().
+    assert COURSE.default_schema == "genie_agent"
+    assert COURSE.default_table_prefix == "mfg_"
     assert [n.order for n in COURSE.notebooks] == sorted(n.order for n in COURSE.notebooks)
     assert set(COURSE.tiers) == {"small", "large"}
 
@@ -30,14 +32,18 @@ def test_every_manifest_notebook_has_its_sql():
 
 
 def test_notebook_has_databricks_header_and_cells():
-    src = build_notebook_source(COURSE, COURSE.notebooks[1], catalog="mfg", tier="small")
+    src = build_notebook_source(COURSE, COURSE.notebooks[1], catalog="mfg", tier="small",
+                                layout=resolve_layout(catalog="mfg"))
     assert src.startswith(SQL_HEADER)
     assert src.count(CELL_DELIMITER) >= 5, "banners should have become separate cells"
     assert "-- MAGIC %md" in src, "section banners should render as markdown"
 
 
 def test_catalog_is_substituted():
-    src = build_notebook_source(COURSE, COURSE.notebooks[1], catalog="training_v2", tier="small")
+    src = build_notebook_source(
+        COURSE, COURSE.notebooks[1], catalog="training_v2", tier="small",
+        layout=resolve_layout(catalog="training_v2"),
+    )
     assert "training_v2.core.dim_date" in src
     assert "mfg.core" not in src
     assert "{{CATALOG}}" not in src
@@ -97,7 +103,8 @@ def test_banner_splitting_finds_sections():
 # CATALOG statement was never generated and the spoiler in its COMMENT went
 # unnoticed until someone ran it with create_catalog=True.
 ALL_LAYOUTS = [
-    ("default", dict(catalog=None)),
+    ("course default", dict(schema="genie_agent", table_prefix="mfg_")),
+    ("bare current catalog", dict(catalog=None)),
     ("named catalog", dict(catalog="main")),
     ("create catalog", dict(catalog="mfg", create_catalog=True)),
     ("single schema", dict(schema="training_you")),
@@ -178,9 +185,12 @@ def test_dry_run_install_needs_no_workspace():
 from databricks360._layout import resolve as resolve_layout, setup_ddl
 
 
-def test_default_uses_current_catalog_and_creates_nothing_above_schema():
-    """The safe default for a governed workspace: no CREATE CATALOG at all."""
-    src = build_notebook_source(COURSE, COURSE.notebooks[0], catalog=None, tier="small")
+def test_multi_schema_layout_creates_nothing_above_schema():
+    """The multi-schema layout in a governed workspace: no CREATE CATALOG at all."""
+    src = build_notebook_source(
+        COURSE, COURSE.notebooks[0], catalog=None, tier="small",
+        layout=resolve_layout(),
+    )
     assert "CREATE CATALOG IF NOT EXISTS" not in src
     # Schema names are unqualified so SQL resolves them against current_catalog().
     assert "CREATE SCHEMA IF NOT EXISTS core" in src
@@ -191,14 +201,20 @@ def test_default_uses_current_catalog_and_creates_nothing_above_schema():
     assert "SELECT current_catalog() AS default_catalog" in src
 
 
-def test_default_layout_tables_are_two_level():
-    src = build_notebook_source(COURSE, COURSE.notebooks[1], catalog=None, tier="small")
+def test_multi_schema_tables_are_two_level():
+    src = build_notebook_source(
+        COURSE, COURSE.notebooks[1], catalog=None, tier="small",
+        layout=resolve_layout(),
+    )
     assert "core.dim_date" in src
     assert "mfg.core" not in src
 
 
 def test_named_catalog_qualifies_and_switches_to_it():
-    src = build_notebook_source(COURSE, COURSE.notebooks[0], catalog="main", tier="small")
+    src = build_notebook_source(
+        COURSE, COURSE.notebooks[0], catalog="main", tier="small",
+        layout=resolve_layout(catalog="main"),
+    )
     assert "USE CATALOG main;" in src
     assert "CREATE CATALOG IF NOT EXISTS" not in src
     assert "CREATE SCHEMA IF NOT EXISTS main.core" in src
@@ -244,7 +260,8 @@ def test_single_schema_layout_collapses_everything():
 
 
 def test_single_schema_skips_ddl_it_cannot_run():
-    layout = resolve_layout(catalog="main", schema="training_you")
+    """With no CREATE SCHEMA privilege, say so rather than emitting a failing statement."""
+    layout = resolve_layout(catalog="main", schema="training_you", create_schema=False)
     src = build_notebook_source(COURSE, COURSE.notebooks[0], catalog="main", tier="small", layout=layout)
     assert "CREATE CATALOG IF NOT EXISTS" not in src
     assert "Skipping CREATE SCHEMA" in src
@@ -260,7 +277,10 @@ def test_create_volume_can_be_declined():
 
 
 def test_verify_query_lists_the_right_schemas():
-    multi = build_notebook_source(COURSE, COURSE.notebooks[0], catalog="mfg", tier="small")
+    multi = build_notebook_source(
+        COURSE, COURSE.notebooks[0], catalog="mfg", tier="small",
+        layout=resolve_layout(catalog="mfg"),
+    )
     assert "'core', 'ref', 'staging'" in multi
     single = build_notebook_source(
         COURSE, COURSE.notebooks[0], catalog="main", tier="small",
@@ -281,12 +301,27 @@ def test_qualified_names_are_rejected():
 
 def test_install_reports_what_it_skipped():
     result = install(
-        "genie-agents", dry_run=True, catalog="main", schema="training_you", create_volume=False,
+        "genie-agents", dry_run=True, catalog="main", schema="training_you",
+        create_schema=False, create_volume=False,
     )
     rendered = repr(result)
     assert "single schema: main.training_you" in rendered
-    assert "CREATE CATALOG" in rendered and "CREATE SCHEMA" in rendered
+    assert "CREATE SCHEMA" in rendered
     assert "CREATE VOLUME" in rendered
+
+
+def test_bare_install_uses_the_course_naming():
+    """install('genie-agents') with no arguments must produce the layout the
+    course expects, not a generic one the caller has to remember to ask for."""
+    result = install("genie-agents", dry_run=True)
+    rendered = repr(result)
+    assert "genie_agent" in rendered
+    assert "mfg_core_dim_date" in rendered
+
+    src = build_notebook_source(COURSE, COURSE.notebooks[1], catalog=None, tier="small",
+                                layout=resolve_layout(schema=COURSE.default_schema,
+                                                      table_prefix=COURSE.default_table_prefix))
+    assert "genie_agent.mfg_core_dim_date" in src
 
 
 # ── Table-name prefixes for a shared schema ──────────────────────────────────
@@ -313,8 +348,8 @@ def test_prefixed_volume_lands_in_the_same_schema():
     layout = resolve_layout(schema="genie_agent", table_prefix="mfg_")
     src = build_notebook_source(COURSE, COURSE.notebooks[0], catalog=None, tier="small", layout=layout)
     assert "CREATE VOLUME IF NOT EXISTS genie_agent.mfg_ref_documents" in src
-    # Single-schema assumes you cannot create the schema, so it says so instead.
-    assert "Skipping CREATE SCHEMA" in src
+    # Creation is attempted by default now; the schema is normally ours to make.
+    assert "CREATE SCHEMA IF NOT EXISTS genie_agent" in src
 
 
 def test_prefix_never_leaks_into_the_schema_name():

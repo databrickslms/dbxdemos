@@ -96,8 +96,8 @@ def resolve(
     `catalog=None` (the default) targets the session's current catalog and creates
     nothing above schema level — the safest assumption in a governed workspace.
 
-    Passing `schema` selects the single-schema layout and assumes you cannot create
-    that schema either, since that is the reason to reach for it.
+    Passing `schema` selects the single-schema layout. Creation is attempted by
+    default; pass create_schema=False if you lack the privilege.
     """
     if catalog is not None and (not catalog or "." in catalog):
         raise ValueError(f"catalog must be a bare name, got {catalog!r}")
@@ -139,7 +139,9 @@ def resolve(
         schemas=(schema,),
         table_prefix=table_prefix,
         create_catalog=create_catalog,
-        create_schema=False if create_schema is None else create_schema,
+        # Attempt creation by default: CREATE SCHEMA IF NOT EXISTS is a no-op when
+        # it already exists. Pass create_schema=False without the privilege.
+        create_schema=True if create_schema is None else create_schema,
         create_volume=create_volume,
         single_schema=schema,
     )
@@ -180,7 +182,7 @@ def setup_ddl(layout: Layout) -> str:
         if layout.is_single_schema:
             cells.append(
                 f"CREATE SCHEMA IF NOT EXISTS {layout.schema_path()}\n"
-                "  COMMENT 'Meridian Financial Group teaching dataset.';"
+                "  COMMENT 'Meridian Financial Group — synthetic banking data.';"
             )
         else:
             cells.append(

@@ -33,6 +33,18 @@ academy.list_courses()
 academy.install('genie-agents')
 ```
 
+The bare call uses the course's own naming — a single `genie_agent` schema in your
+current catalog, with objects named `mfg_core_*`, `mfg_ref_*`, `mfg_staging_*`:
+
+```
+genie_agent.mfg_core_dim_date
+genie_agent.mfg_core_fct_transactions
+genie_agent.mfg_ref_documents
+```
+
+Override with `schema=`, `table_prefix=` or `catalog=` — see **Regulated
+environments** below.
+
 `install` writes the lab notebooks into your workspace and prints the run order.
 Then you open them and run each in turn.
 
