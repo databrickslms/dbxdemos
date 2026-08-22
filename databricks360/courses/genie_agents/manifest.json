@@ -41,7 +41,7 @@
       "name": "03_facts",
       "sql": "03_facts.sql",
       "title": "03 · Facts",
-      "intro": "Five fact tables: transactions, reversals, the daily loan book, credit applications and fraud cases.\n\n**This is the slow one** — it generates {{TXN_COUNT}} transactions plus roughly 35M daily loan-balance snapshots. Expect several minutes on a small warehouse, longer if it is cold.\n\nRead the row counts it prints at the end. You will be asked about them.",
+      "intro": "Three fact tables: daily AUM snapshots, client flows, and portfolio returns by period.\n\n**This is the slow one** — it generates {{TXN_COUNT}} flow events plus roughly 36M daily AUM snapshots. Expect several minutes on a small warehouse, longer if it is cold.\n\nRead the row counts it prints at the end. You will be asked about them.",
       "slow": true,
       "required": true
     },
@@ -50,7 +50,7 @@
       "name": "04_staging",
       "sql": "04_staging.sql",
       "title": "04 · Staging",
-      "intro": "Two objects that exist in most real lakehouses and that nobody has cleaned up: a very wide raw landing table, and a superseded revenue table still sitting next to its replacement.\n\nThey are here because deciding what *not* to point an agent at is part of the job.",
+      "intro": "Two objects that exist in most real lakehouses and that nobody has retired: a 380-column custodian position feed, and a superseded AUM extract still sitting beside its replacement.\n\nThey are here because deciding what *not* to point an agent at is part of the job.",
       "required": false,
       "needed_for": "Modules 6, 7, 12, 13"
     },
@@ -59,7 +59,7 @@
       "name": "05_governance",
       "sql": "05_governance.sql",
       "title": "05 · Governance",
-      "intro": "Row-level and column-level access control, plus certification tags.\n\n**Needs privilege** to create functions and ALTER the tables, and the `mfg_*` account groups to exist. If you cannot run it, skip it — everything else still works.",
+      "intro": "A row filter on advisor coverage region, column masks over the client identifiers, and certification tags.\n\n**Needs privilege** to create functions and ALTER the tables, and the `mfg_*` account groups to exist. If you cannot run it, skip it.",
       "requires_admin": true,
       "required": false,
       "needed_for": "Module 6"
@@ -69,7 +69,7 @@
       "name": "06_curated",
       "sql": "06_curated.sql",
       "title": "06 · Curated layer",
-      "intro": "The objects an agent should actually be pointed at: net-revenue and month-end views, a customer view without identifiers, and three Unity Catalog functions.\n\n**Attempt the curation exercise before running this.** It is the worked answer — opening it first turns an exercise into a reading task.",
+      "intro": "The objects an agent should be pointed at: month-end AUM converted to USD with the discretionary split made explicit, settled flows with the netting spelled out, a client view without identifiers, and four Unity Catalog functions.\n\n**Attempt the curation exercise before running this.** It is the worked answer.",
       "required": false,
       "needed_for": "Modules 7, 15"
     },
@@ -78,7 +78,7 @@
       "name": "07_metric_view",
       "sql": "07_metric_view.sql",
       "title": "07 · Metric view",
-      "intro": "One definition of each headline metric, declared once and correct however it is grouped at query time.\n\nDefining \"net fee revenue\" separately in five places is how five teams end up with five numbers.",
+      "intro": "One declaration of AUM, assets under advisement and net flows, with synonyms and formats, so they cannot mean different things in different places.",
       "required": false,
       "needed_for": "Modules 7, 15",
       "depends_on": "06_curated"
@@ -88,7 +88,7 @@
       "name": "99_validate",
       "sql": "99_validate.sql",
       "title": "99 · Validate",
-      "intro": "Twelve checks confirming the dataset is complete and behaving as expected. Every row should read PASS.\n\nRead the numbers, not just the verdicts — several of them are the point.",
+      "intro": "Fourteen checks confirming the dataset is complete and behaving as expected. Every row should read PASS.\n\nRead the numbers, not just the verdicts.",
       "required": false,
       "needed_for": "checking your install"
     }

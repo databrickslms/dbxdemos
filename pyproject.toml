@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "databricks360"
-version = "0.6.3"
+version = "0.7.0"
 description = "Install Databricks course lab environments: notebooks, catalogs, datasets and governance objects."
 readme = "README.md"
 requires-python = ">=3.9"

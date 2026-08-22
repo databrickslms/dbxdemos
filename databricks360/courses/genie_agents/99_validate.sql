@@ -9,138 +9,133 @@
 -- ============================================================================
 
 WITH
--- 1. Two complete fiscal years, starting 1 October.
 c1 AS (
   SELECT 'fiscal calendar' AS check_name,
-         cast(count(*) AS STRING)                              AS value_1,
-         cast(count(DISTINCT fiscal_year) AS STRING)            AS value_2,
-         concat('first day ', cast(min(date_key) AS STRING))    AS detail,
+         cast(count(*) AS STRING)                                    AS value_1,
+         cast(count(DISTINCT fiscal_year) AS STRING)                  AS value_2,
+         concat('first day ', cast(min(date_key) AS STRING))          AS detail,
          CASE WHEN count(*) = 730
                AND count(DISTINCT fiscal_year) = 2
                AND (SELECT fiscal_year FROM {{CORE}}dim_date WHERE date_key = DATE'2025-10-01') = 'FY2026'
-              THEN 'PASS' ELSE 'FAIL' END                       AS verdict
+              THEN 'PASS' ELSE 'FAIL' END                            AS verdict
   FROM {{CORE}}dim_date
 ),
--- 2. Region and state are codes, not names.
 c2 AS (
-  SELECT 'region codes',
+  SELECT 'reporting dates',
+         concat(cast(count(*) AS STRING), ' reporting dates'),
+         concat(cast((SELECT count(*) FROM {{CORE}}dim_date WHERE is_month_end) AS STRING), ' month ends'),
+         'last business day, not last calendar day',
+         CASE WHEN count(*) = 24 THEN 'PASS' ELSE 'FAIL' END
+  FROM {{CORE}}dim_date WHERE is_reporting_date
+),
+c3 AS (
+  SELECT 'asset class hierarchies',
+         concat(cast(count(DISTINCT investment_class) AS STRING), ' investment'),
+         concat(cast(count(DISTINCT regulatory_class) AS STRING), ' regulatory'),
+         'the two do not align',
+         CASE WHEN count(DISTINCT investment_class) = 5
+               AND count(DISTINCT regulatory_class) = 3
+              THEN 'PASS' ELSE 'FAIL' END
+  FROM {{CORE}}dim_asset_class
+),
+c4 AS (
+  SELECT 'advisor region codes',
          concat(cast(count(DISTINCT region) AS STRING), ' regions'),
          concat(cast(count(DISTINCT state) AS STRING), ' states'),
-         concat('max code length ', cast(max(length(region)) AS STRING)),
-         CASE WHEN count(DISTINCT region) = 4
-               AND max(length(region)) <= 4
-               AND max(length(state)) = 2
+         concat(cast(count(DISTINCT channel) AS STRING), ' channels'),
+         CASE WHEN count(DISTINCT region) = 4 AND max(length(region)) <= 4
               THEN 'PASS' ELSE 'FAIL' END
-  FROM {{CORE}}dim_branch
+  FROM {{CORE}}dim_advisor
 ),
--- 3. Two product hierarchies that do not agree.
-c3 AS (
-  SELECT 'product hierarchies',
-         concat(cast(count(DISTINCT product_category) AS STRING), ' business'),
-         concat(cast(count(DISTINCT regulatory_product_class) AS STRING), ' regulatory'),
-         'the two do not align',
-         CASE WHEN count(DISTINCT product_category) = 4
-               AND count(DISTINCT regulatory_product_class) >= 5
-              THEN 'PASS' ELSE 'FAIL' END
-  FROM {{CORE}}dim_product
-),
--- 4. Status mix: settled, pending, declined, reversed.
-c4 AS (
-  SELECT 'transaction status mix',
-         concat(cast(count(DISTINCT status) AS STRING), ' statuses'),
-         concat(cast(round(100.0 * sum(CASE WHEN status = 'DECLINED' THEN 1 ELSE 0 END) / count(*), 1) AS STRING), '% declined'),
-         concat(cast(round(100.0 * sum(CASE WHEN status = 'POSTED' THEN 1 ELSE 0 END) / count(*), 1) AS STRING), '% posted'),
-         CASE WHEN count(DISTINCT status) = 4
-               AND sum(CASE WHEN status = 'DECLINED' THEN 1 ELSE 0 END) > 0
-              THEN 'PASS' ELSE 'FAIL' END
-  FROM {{CORE}}fct_transactions
-),
--- 5. Gross and net revenue differ, by a few percent.
 c5 AS (
-  SELECT 'gross vs net revenue',
-         concat(cast(round(100.0 * (g - n) / nullif(n, 0), 2) AS STRING), '% overstated'),
-         concat('gross ', cast(round(g / 1e6) AS STRING), 'M'),
-         concat('net ', cast(round(n / 1e6) AS STRING), 'M'),
-         CASE WHEN 100.0 * (g - n) / nullif(n, 0) BETWEEN 2 AND 8
+  SELECT 'discretionary split',
+         concat(cast(round(100.0 * sum(CASE WHEN is_discretionary THEN 1 ELSE 0 END) / count(*), 1) AS STRING), '% discretionary'),
+         concat(cast(round(100.0 * sum(CASE WHEN NOT is_discretionary THEN 1 ELSE 0 END) / count(*), 1) AS STRING), '% advisory only'),
+         'AUM and AUA differ by this',
+         CASE WHEN sum(CASE WHEN NOT is_discretionary THEN 1 ELSE 0 END) > 0
               THEN 'PASS' ELSE 'FAIL' END
-  FROM (
-    SELECT sum(t.fee_revenue) AS g,
-           sum(t.fee_revenue) - (SELECT coalesce(sum(reversal_amount), 0) FROM {{CORE}}fct_reversals) AS n
-    FROM {{CORE}}fct_transactions t WHERE t.status = 'POSTED'
-  )
+  FROM {{CORE}}dim_portfolio
 ),
--- 6. The loan book is a daily snapshot, so summing across dates multiplies it.
 c6 AS (
-  SELECT 'loan snapshot grain',
+  SELECT 'aum snapshot grain',
          concat(cast(round(all_dates / nullif(latest, 0)) AS STRING), 'x if summed'),
          concat('real book ', cast(round(latest / 1e9, 1) AS STRING), 'B'),
          concat('summed ', cast(round(all_dates / 1e12, 1) AS STRING), 'T'),
          CASE WHEN all_dates / nullif(latest, 0) > 100 THEN 'PASS' ELSE 'FAIL' END
   FROM (
-    SELECT sum(principal_balance) AS all_dates,
-           (SELECT sum(principal_balance) FROM {{CORE}}fct_loan_balances
-             WHERE snapshot_date = (SELECT max(snapshot_date) FROM {{CORE}}fct_loan_balances)) AS latest
-    FROM {{CORE}}fct_loan_balances
+    SELECT sum(market_value_local) AS all_dates,
+           (SELECT sum(market_value_local) FROM {{CORE}}fct_aum_snapshot
+             WHERE snapshot_date = (SELECT max(snapshot_date) FROM {{CORE}}fct_aum_snapshot)) AS latest
+    FROM {{CORE}}fct_aum_snapshot
   )
 ),
--- 7. Four distinct delinquency concepts, with materially different answers.
 c7 AS (
-  SELECT 'delinquency definitions',
-         concat(cast(round(100.0 * sum(CASE WHEN days_past_due >= 30 THEN 1 ELSE 0 END) / count(*), 1) AS STRING), '% at 30+'),
-         concat(cast(round(100.0 * sum(CASE WHEN days_past_due >= 90 THEN 1 ELSE 0 END) / count(*), 1) AS STRING), '% at 90+'),
-         concat(cast(count(DISTINCT dpd_bucket) AS STRING), ' buckets, ',
-                cast(count(DISTINCT loan_status) AS STRING), ' statuses'),
-         CASE WHEN count(DISTINCT dpd_bucket) = 5
-               AND count(DISTINCT loan_status) = 4
-              THEN 'PASS' ELSE 'FAIL' END
-  FROM {{CORE}}fct_loan_balances
-  WHERE snapshot_date = (SELECT max(snapshot_date) FROM {{CORE}}fct_loan_balances)
+  SELECT 'held away assets',
+         concat(cast(round(100.0 * sum(CASE WHEN held_away_value_local > 0 THEN 1 ELSE 0 END) / count(*), 1) AS STRING), '% of rows'),
+         concat(cast(round(100.0 * sum(held_away_value_local) / nullif(sum(market_value_local), 0), 1) AS STRING), '% of managed value'),
+         'the gap between AUM and AUA',
+         CASE WHEN sum(held_away_value_local) > 0 THEN 'PASS' ELSE 'FAIL' END
+  FROM {{CORE}}fct_aum_snapshot
+  WHERE snapshot_date = (SELECT max(snapshot_date) FROM {{CORE}}fct_aum_snapshot)
 ),
--- 8. Customer identifiers are present, so masking has something to protect.
 c8 AS (
-  SELECT 'customer identifiers',
-         concat(cast(round(count(*) / 1e6, 1) AS STRING), 'M customers'),
+  SELECT 'flow types and status',
+         concat(cast(count(DISTINCT flow_type) AS STRING), ' flow types'),
+         concat(cast(round(100.0 * sum(CASE WHEN flow_type LIKE 'EXCHANGE%' THEN 1 ELSE 0 END) / count(*), 1) AS STRING), '% exchanges'),
+         concat(cast(round(100.0 * sum(CASE WHEN status <> 'SETTLED' THEN 1 ELSE 0 END) / count(*), 1) AS STRING), '% not settled'),
+         CASE WHEN count(DISTINCT flow_type) = 6 AND count(DISTINCT status) = 3
+              THEN 'PASS' ELSE 'FAIL' END
+  FROM {{CORE}}fct_flows
+),
+c9 AS (
+  SELECT 'return definitions',
+         concat(cast(round(100.0 * avg(twr_gross), 2) AS STRING), '% avg gross'),
+         concat(cast(round(100.0 * avg(twr_net), 2) AS STRING), '% avg net'),
+         concat(cast(round(100.0 * avg(mwr), 2) AS STRING), '% avg money weighted'),
+         CASE WHEN abs(avg(twr_gross) - avg(twr_net)) > 0.0005
+              AND count(DISTINCT period_type) = 6 THEN 'PASS' ELSE 'FAIL' END
+  FROM {{CORE}}fct_performance
+),
+c10 AS (
+  SELECT 'client identifiers',
+         concat(cast(round(count(*) / 1e6, 1) AS STRING), 'M clients'),
          concat(cast(count(DISTINCT ssn_last4) AS STRING), ' distinct ssn_last4'),
          'masking has something to protect',
          CASE WHEN count(*) > 0 THEN 'PASS' ELSE 'FAIL' END
-  FROM {{CORE}}dim_customer
+  FROM {{CORE}}dim_client
 ),
--- 9. More than one settlement currency, so conversion matters.
-c9 AS (
+c11 AS (
   SELECT 'multi-currency',
-         concat(cast(count(DISTINCT currency) AS STRING), ' currencies'),
-         concat_ws(', ', array_sort(collect_set(currency))),
+         concat(cast(count(DISTINCT local_currency) AS STRING), ' currencies'),
+         concat_ws(', ', array_sort(collect_set(local_currency))),
          'conversion needs an as-of-date join',
-         CASE WHEN count(DISTINCT currency) = 3 THEN 'PASS' ELSE 'FAIL' END
-  FROM {{CORE}}fct_transactions
+         CASE WHEN count(DISTINCT local_currency) >= 4 THEN 'PASS' ELSE 'FAIL' END
+  FROM {{CORE}}fct_aum_snapshot
 ),
--- 10. Determinism: the same key always produces the same row.
-c10 AS (
+c12 AS (
+  SELECT 'referential integrity',
+         concat(cast(count(*) AS STRING), ' orphan snapshots'),
+         'expected 0',
+         'every snapshot reaches an account',
+         CASE WHEN count(*) = 0 THEN 'PASS' ELSE 'FAIL' END
+  FROM {{CORE}}fct_aum_snapshot s
+  LEFT JOIN {{CORE}}dim_account a ON a.account_id = s.account_id
+  WHERE a.account_id IS NULL
+),
+c13 AS (
   SELECT 'determinism',
-         concat(cast(count(*) AS STRING), ' value for BR0001'),
+         concat(cast(count(*) AS STRING), ' value for PF000001'),
          'hash-derived, not rand()',
          'identical for every learner',
          CASE WHEN count(*) = 1 THEN 'PASS' ELSE 'FAIL' END
-  FROM (SELECT DISTINCT region FROM {{CORE}}dim_branch WHERE branch_id = 'BR0001')
+  FROM (SELECT DISTINCT asset_class_code FROM {{CORE}}dim_portfolio WHERE portfolio_id = 'PF000001')
 ),
--- 11. Referential integrity through the join hub.
-c11 AS (
-  SELECT 'referential integrity',
-         concat(cast(count(*) AS STRING), ' orphan transactions'),
-         'expected 0',
-         'every txn reaches an account',
-         CASE WHEN count(*) = 0 THEN 'PASS' ELSE 'FAIL' END
-  FROM {{CORE}}fct_transactions t
-  LEFT JOIN {{CORE}}dim_account a ON a.account_id = t.account_id
-  WHERE a.account_id IS NULL
-),
--- 12. Row counts in the expected range for the small tier.
-c12 AS (
+c14 AS (
   SELECT 'row counts',
-         concat(cast(round((SELECT count(*) FROM {{CORE}}fct_transactions) / 1e6) AS STRING), 'M transactions'),
-         concat(cast(round((SELECT count(*) FROM {{CORE}}fct_loan_balances) / 1e6) AS STRING), 'M loan snapshots'),
-         concat(cast(round((SELECT count(*) FROM {{CORE}}dim_customer) / 1e6, 1) AS STRING), 'M customers'),
-         CASE WHEN (SELECT count(*) FROM {{CORE}}fct_transactions) > 1000000
+         concat(cast(round((SELECT count(*) FROM {{CORE}}fct_flows) / 1e6) AS STRING), 'M flows'),
+         concat(cast(round((SELECT count(*) FROM {{CORE}}fct_aum_snapshot) / 1e6) AS STRING), 'M snapshots'),
+         concat(cast(round((SELECT count(*) FROM {{CORE}}dim_client) / 1e6, 1) AS STRING), 'M clients'),
+         CASE WHEN (SELECT count(*) FROM {{CORE}}fct_flows) > 1000000
               THEN 'PASS' ELSE 'FAIL' END
 )
 SELECT * FROM c1
@@ -149,4 +144,5 @@ UNION ALL SELECT * FROM c4  UNION ALL SELECT * FROM c5
 UNION ALL SELECT * FROM c6  UNION ALL SELECT * FROM c7
 UNION ALL SELECT * FROM c8  UNION ALL SELECT * FROM c9
 UNION ALL SELECT * FROM c10 UNION ALL SELECT * FROM c11
-UNION ALL SELECT * FROM c12;
+UNION ALL SELECT * FROM c12 UNION ALL SELECT * FROM c13
+UNION ALL SELECT * FROM c14;

@@ -182,10 +182,10 @@ def test_the_answer_key_is_actually_instructive():
     terse it would have stopped doing its job while every test still passed."""
     curated = next(n for n in COURSE.notebooks if n.sql == "06_curated.sql")
     src = build_notebook_source(COURSE, curated, catalog=None, tier="small")
-    assert 'what "revenue" means at Meridian' in src
+    assert 'what "AUM" means at Meridian' in src
     assert "SUM over a period is a real balance" in src
-    assert "Not the same as delinquent" in src
-    assert "an accounting event" in src.lower()
+    assert "assets under advisement, not AUM" in src
+    assert "must not be counted as either" in src
 
 
 def test_dry_run_install_needs_no_workspace():
@@ -276,7 +276,7 @@ def test_single_schema_layout_collapses_everything():
             assert forbidden not in src, f"{nb.sql} still references {forbidden}"
 
     facts = build_notebook_source(COURSE, COURSE.notebooks[2], catalog="main", tier="small", layout=layout)
-    assert "main.training_you.fct_transactions" in facts
+    assert "main.training_you.fct_aum_snapshot" in facts
     assert "main.training_you.dim_account" in facts
 
 
@@ -430,8 +430,8 @@ def test_governance_does_not_depend_on_staging():
     now tagged where they are created."""
     gov = next(n for n in COURSE.notebooks if n.name == "05_governance")
     src = build_notebook_source(COURSE, gov, catalog=None, tier="small")
-    assert "fct_txn_legacy" not in src.replace("in notebook 04", "")
-    assert "fct_transactions_raw" not in src
+    assert "fct_aum_legacy" not in src.replace("in notebook 04", "")
+    assert "fct_holdings_raw" not in src
 
     staging = next(n for n in COURSE.notebooks if n.name == "04_staging")
     src04 = build_notebook_source(COURSE, staging, catalog=None, tier="small")
@@ -444,17 +444,17 @@ def test_metric_view_declares_its_dependency():
     assert mv.depends_on == "06_curated"
     src = build_notebook_source(COURSE, mv, catalog=None, tier="small")
     # It sources views that 06 creates, so the dependency is real, not advisory.
-    assert "vw_transactions_net" in src
-    assert "dim_customer_safe" in src
+    assert "vw_aum_reporting" in src
+    assert "dim_client_safe" in src
 
 
 def test_validate_needs_only_the_required_notebooks():
     """99 must work on a minimal install, or it cannot confirm one."""
     val = next(n for n in COURSE.notebooks if n.name == "99_validate")
     src = build_notebook_source(COURSE, val, catalog=None, tier="small")
-    for optional_object in ["fct_txn_legacy", "fct_transactions_raw",
-                            "vw_transactions_net", "vw_loan_book_eop",
-                            "mv_banking_metrics"]:
+    for optional_object in ["fct_aum_legacy", "fct_holdings_raw",
+                            "vw_aum_reporting", "vw_net_flows",
+                            "mv_wealth_metrics"]:
         assert optional_object not in src, f"99 references {optional_object} from an optional notebook"
 
 
