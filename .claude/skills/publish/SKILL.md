@@ -43,40 +43,45 @@ enforces that they agree.
 
 ## 3. Publish
 
-Prefer the tag route. It needs no credential.
-
-### Trusted Publishing (no token)
-
 ```bash
-git tag "v$(grep -m1 '^version' pyproject.toml | cut -d'"' -f2)"
-git push origin --tags
+python3 scripts/publish.py
 ```
 
-GitHub Actions runs the tests, builds, verifies the tag matches `pyproject.toml`,
-and publishes over OIDC.
+This **actually uploads**. It runs preflight, picks whichever credential route is
+available, publishes, then polls the index until the version is visible and prints
+the exact `%pip` line to use.
 
-One-time setup, if `publish.yml` has never run: on PyPI → Your account →
-Publishing, add a pending publisher — project `databricks360`, owner
-`databrickslms`, repository `dbxdemos`, workflow `publish.yml`, environment
-`pypi`. Then create a GitHub environment named `pypi`.
+Routes, in order of preference:
 
-### twine (needs the user's token)
+| Route | Credential | Flag |
+|---|---|---|
+| Trusted Publishing | none — GitHub Actions authenticates over OIDC | `--tag` |
+| twine | `~/.pypirc`, `TWINE_*` env vars, or keyring | `--twine` |
 
-**Never ask the user to paste a PyPI token into the conversation, and never read
-one from their keychain.** A PyPI token publishes code under their name to an
-index other people install from. Build the artifacts and hand them the command.
+With no flag it takes the tag route when Trusted Publishing is set up and no local
+credential exists, otherwise twine. `--dry-run` stops after preflight and build.
+
+### If it reports no credential
+
+The script prints setup instructions for both routes and stops. **Never offer to
+take the token in conversation, and never read one from the keychain.** A PyPI
+token publishes code under the user's name to an index other people install from —
+it belongs in their shell or `~/.pypirc`, not in a transcript.
+
+The env-var route, for the user to run themselves (the token is not echoed and
+does not reach shell history):
 
 ```bash
-rm -rf dist && python3 -m build && python3 -m twine check dist/*
+umask 077 && mkdir -p ~/.config
+read -rs TOKEN
+printf 'export TWINE_USERNAME=__token__\nexport TWINE_PASSWORD=%s\n' "$TOKEN" > ~/.config/pypi-token.env
+unset TOKEN
+grep -q pypi-token.env ~/.zshrc || echo '[ -f ~/.config/pypi-token.env ] && . ~/.config/pypi-token.env' >> ~/.zshrc
 ```
 
-Then give them, to run themselves:
-
-```bash
-python3 -m twine upload dist/*
-```
-
-Username `__token__`, password their token.
+A new shell then has it, and so does the Bash tool, which is initialised from the
+user's profile. `chmod 600` on a dedicated file is narrower than exporting the
+token from `.zshrc` directly, where every child process inherits it.
 
 ## 4. Confirm it landed
 
