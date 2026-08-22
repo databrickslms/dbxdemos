@@ -20,7 +20,7 @@ from ._catalog import Course, available_courses, get_course
 from ._install import Installation, build_notebook_source, install
 from ._layout import Layout, resolve as resolve_layout
 
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 __all__ = [
     "install",
     "list_courses",
@@ -48,7 +48,11 @@ def list_courses() -> None:
         if course.description:
             for line in _wrap(course.description, 76):
                 print(f"    {line}")
-        print(f"  catalog: {course.default_catalog}   notebooks: {len(course.notebooks)}")
+        required = sum(1 for n in course.notebooks if n.required)
+        where = course.default_schema or "core / ref / staging"
+        naming = f"{where}.{course.default_table_prefix}<group>_*" if course.default_table_prefix else where
+        print(f"  objects:   {naming}")
+        print(f"  notebooks: {len(course.notebooks)} ({required} required)")
         if course.tiers:
             print("  tiers:")
             for name, tier in course.tiers.items():

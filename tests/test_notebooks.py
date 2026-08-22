@@ -465,3 +465,42 @@ def test_install_summary_separates_required_from_optional():
     assert "as the course needs them" in rendered
     assert "Modules 6, 7, 12, 13" in rendered
     assert "after 06_curated" in rendered
+
+
+# ── The public API surface ───────────────────────────────────────────────────
+# list_courses() shipped broken in 0.5.0 and 0.6.x: it still referenced
+# Course.default_catalog, removed when the naming moved into the manifest. No
+# test had ever called it, so 40 tests passed while the first command in the
+# README crashed.
+
+def test_list_courses_runs():
+    import io, contextlib
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        academy.list_courses()
+    printed = buf.getvalue()
+    assert "genie-agents" in printed
+    assert "genie_agent" in printed, "should show where objects land"
+    assert "required" in printed, "should say how many notebooks are needed"
+
+
+def test_every_public_name_is_importable():
+    for name in academy.__all__:
+        assert hasattr(academy, name), f"__all__ exports {name} but it is missing"
+
+
+def test_repr_of_a_dry_run_does_not_raise():
+    repr(install("genie-agents", dry_run=True))
+    repr(install("genie-agents", dry_run=True, schema="s", create_volume=False))
+
+
+def test_catalogue_description_does_not_editorialise():
+    """It prints on a learner's screen, so it describes the data, not the design."""
+    for phrase in ["on purpose", "deliberate", "flaw", "do not tidy"]:
+        assert phrase not in COURSE.description.lower()
+
+
+def test_tier_descriptions_do_not_editorialise():
+    for name, tier in COURSE.tiers.items():
+        for phrase in ["on purpose", "deliberate", "flaw"]:
+            assert phrase not in tier.description.lower(), f"tier {name}: {tier.description}"

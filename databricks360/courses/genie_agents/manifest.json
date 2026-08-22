@@ -1,19 +1,19 @@
 {
   "id": "genie-agents",
   "title": "Genie Agents — Meridian Financial Group lab",
-  "description": "Meridian Financial Group: a synthetic US bank — transactions, reversals, a daily loan book, credit applications and fraud cases across 2.1M customers and 340 branches, over two fiscal years. Built for the Genie Agents course. The data is realistic rather than clean, on purpose; do not tidy it up before the course tells you to.",
+  "description": "Meridian Financial Group: a synthetic US bank — transactions, reversals, a daily loan book, credit applications and fraud cases across 2.1M customers and 340 branches, over two fiscal years. The lab dataset for the Genie Agents course.",
   "default_schema": "genie_agent",
   "default_table_prefix": "mfg_",
   "default_tier": "small",
   "tiers": {
     "small": {
-      "description": "20M transactions. Every module except 13. Start here.",
+      "description": "20M transactions. Enough for everything except the performance work.",
       "values": {
         "TXN_COUNT": "20000000"
       }
     },
     "large": {
-      "description": "900M transactions, left unclustered on purpose. Module 13 (latency) only.",
+      "description": "900M transactions. Only for the performance module, where query time has to be measurable.",
       "values": {
         "TXN_COUNT": "900000000"
       }
