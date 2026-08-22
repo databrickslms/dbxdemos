@@ -1,7 +1,7 @@
 {
   "id": "genie-agents",
   "title": "Genie Agents — Meridian Financial Group lab",
-  "description": "Meridian Financial Group: a synthetic US bank — transactions, reversals, a daily loan book, credit applications and fraud cases across 2.1M customers and 340 branches, over two fiscal years. The lab dataset for the Genie Agents course.",
+  "description": "Meridian Financial Group: a synthetic US investment manager — portfolios, funds, AUM snapshots, flows, performance and holdings across 2.1M clients, 4,500 portfolios and four distribution channels, over two fiscal years. The lab dataset for the Genie Agents course.",
   "default_schema": "genie_agent",
   "default_table_prefix": "mfg_",
   "default_tier": "small",
@@ -33,7 +33,7 @@
       "name": "02_dimensions",
       "sql": "02_dimensions.sql",
       "title": "02 · Dimensions",
-      "intro": "Six dimensions: dates, branches, products, customers, accounts and FX rates.\n\nEvery value derives from `hash()` of the row key rather than `rand()`, and ages anchor to a fixed date rather than today. Your data is therefore byte-identical to everyone else's, which is what lets the benchmarks later in the course compare against a known answer.",
+      "intro": "Nine dimensions: dates, asset classes, benchmarks, portfolios, funds, advisors, clients, accounts and FX rates.\n\nEvery value derives from `hash()` of the row key rather than `rand()`, and ages anchor to a fixed date rather than today. Your data is therefore byte-identical to everyone else's, which is what lets the checks later in the course compare against a known answer.",
       "required": true
     },
     {

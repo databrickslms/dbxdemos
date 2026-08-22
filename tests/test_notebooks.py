@@ -94,7 +94,7 @@ def test_unknown_course_lists_what_exists():
 def test_banner_splitting_finds_sections():
     sections = split_sql_sections(read_sql(COURSE, "02_dimensions.sql"))
     titles = " ".join(t for t, _ in sections)
-    for expected in ["dim_date", "dim_branch", "dim_product", "dim_customer"]:
+    for expected in ["dim_date", "dim_portfolio", "dim_client", "dim_asset_class"]:
         assert expected in titles
 
 
@@ -351,7 +351,7 @@ def test_table_prefix_folds_the_group_into_object_names():
     layout = resolve_layout(schema="genie_agent", table_prefix="mfg_")
     src = build_notebook_source(COURSE, COURSE.notebooks[1], catalog=None, tier="small", layout=layout)
     assert "genie_agent.mfg_core_dim_date" in src
-    assert "genie_agent.mfg_core_dim_branch" in src
+    assert "genie_agent.mfg_core_dim_portfolio" in src
     # No unprefixed leftovers.
     assert "genie_agent.dim_date" not in src
 
@@ -359,10 +359,9 @@ def test_table_prefix_folds_the_group_into_object_names():
 def test_table_prefix_reaches_facts_and_joins():
     layout = resolve_layout(catalog="main", schema="genie_agent", table_prefix="mfg_")
     src = build_notebook_source(COURSE, COURSE.notebooks[2], catalog="main", tier="small", layout=layout)
-    assert "main.genie_agent.mfg_core_fct_transactions" in src
+    assert "main.genie_agent.mfg_core_fct_aum_snapshot" in src
     # The joins must be prefixed too, or 03 breaks against 02's output.
     assert "main.genie_agent.mfg_core_dim_account" in src
-    assert "main.genie_agent.mfg_core_dim_customer" in src
 
 
 def test_prefixed_volume_lands_in_the_same_schema():
