@@ -41,6 +41,42 @@
       "title": "03 · Facts",
       "intro": "Five fact tables: transactions, reversals, the daily loan book, credit applications and fraud cases.\n\n**This is the slow one** — it generates {{TXN_COUNT}} transactions plus roughly 35M daily loan-balance snapshots. Expect several minutes on a small warehouse, longer if it is cold.\n\nRead the row counts it prints at the end. You will be asked about them.",
       "slow": true
+    },
+    {
+      "order": 4,
+      "name": "04_staging",
+      "sql": "04_staging.sql",
+      "title": "04 · Staging",
+      "intro": "Two objects that exist in most real lakehouses and that nobody has cleaned up: a very wide raw landing table, and a superseded revenue table still sitting next to its replacement.\n\nThey are here because deciding what *not* to point an agent at is part of the job."
+    },
+    {
+      "order": 5,
+      "name": "05_governance",
+      "sql": "05_governance.sql",
+      "title": "05 · Governance",
+      "intro": "Row-level and column-level access control, plus certification tags.\n\n**Needs privilege** to create functions and ALTER the tables, and the `mfg_*` account groups to exist. If you cannot run it, skip it — everything else still works.",
+      "requires_admin": true
+    },
+    {
+      "order": 6,
+      "name": "06_curated",
+      "sql": "06_curated.sql",
+      "title": "06 · Curated layer",
+      "intro": "The objects an agent should actually be pointed at: net-revenue and month-end views, a customer view without identifiers, and three Unity Catalog functions.\n\n**Attempt the curation exercise before running this.** It is the worked answer — opening it first turns an exercise into a reading task."
+    },
+    {
+      "order": 7,
+      "name": "07_metric_view",
+      "sql": "07_metric_view.sql",
+      "title": "07 · Metric view",
+      "intro": "One definition of each headline metric, declared once and correct however it is grouped at query time.\n\nDefining \"net fee revenue\" separately in five places is how five teams end up with five numbers."
+    },
+    {
+      "order": 99,
+      "name": "99_validate",
+      "sql": "99_validate.sql",
+      "title": "99 · Validate",
+      "intro": "Twelve checks confirming the dataset is complete and behaving as expected. Every row should read PASS.\n\nRead the numbers, not just the verdicts — several of them are the point."
     }
   ]
 }

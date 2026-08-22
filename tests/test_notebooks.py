@@ -149,14 +149,23 @@ def test_notebooks_do_not_reveal_the_planted_flaws():
                 )
 
 
+# 06_curated is the worked answer to the curation exercise, so its metadata is
+# supposed to be rich and prescriptive. 07 documents the metric definitions for
+# the same reason. The terse rule applies to the raw data a learner is handed.
+ANSWER_KEY = {"06_curated.sql", "07_metric_view.sql"}
+
+
 def test_column_comments_are_terse():
     """Real bank catalogues have short, unhelpful comments. Long prescriptive ones
-    are course-author voice leaking into production metadata."""
+    in the RAW data would be course-author voice leaking into production metadata —
+    and would pre-empt the exercise, since Genie reads them."""
     import re
 
     for label, kwargs in ALL_LAYOUTS:
         layout = resolve_layout(**kwargs)
         for nb in COURSE.notebooks:
+            if nb.sql in ANSWER_KEY:
+                continue
             src = build_notebook_source(
                 COURSE, nb, catalog=kwargs.get("catalog"), tier="small", layout=layout
             )
@@ -168,14 +177,26 @@ def test_column_comments_are_terse():
                     )
 
 
+def test_the_answer_key_is_actually_instructive():
+    """The inverse of the rule above: 06 exists to teach, so if its metadata went
+    terse it would have stopped doing its job while every test still passed."""
+    curated = next(n for n in COURSE.notebooks if n.sql == "06_curated.sql")
+    src = build_notebook_source(COURSE, curated, catalog=None, tier="small")
+    assert 'what "revenue" means at Meridian' in src
+    assert "SUM over a period is a real balance" in src
+    assert "Not the same as delinquent" in src
+    assert "an accounting event" in src.lower()
+
+
 def test_dry_run_install_needs_no_workspace():
     result = install("genie-agents", dry_run=True, catalog="mfg", tier="small")
     assert result.catalog == "mfg"
     assert len(result.notebooks) == len(COURSE.notebooks)
-    assert [n.order for n in result.notebooks] == [1, 2, 3]
+    assert [n.order for n in result.notebooks] == [1, 2, 3, 4, 5, 6, 7, 99]
     rendered = repr(result)
     assert "Run these in order" in rendered
     assert "slow" in rendered, "the facts notebook should be flagged slow"
+    assert "needs admin" in rendered, "governance should be flagged as needing privilege"
 
 
 # ── Restricted Unity Catalog layouts ─────────────────────────────────────────
