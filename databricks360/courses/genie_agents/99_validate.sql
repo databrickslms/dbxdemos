@@ -12,10 +12,9 @@ WITH
 -- 1. Two complete fiscal years, starting 1 October.
 c1 AS (
   SELECT 'fiscal calendar' AS check_name,
-         count(*)                                              AS observed,
-         730                                                   AS expected,
-         count(DISTINCT fiscal_year)                            AS fiscal_years,
-         min(date_key)                                          AS first_day,
+         cast(count(*) AS STRING)                              AS value_1,
+         cast(count(DISTINCT fiscal_year) AS STRING)            AS value_2,
+         concat('first day ', cast(min(date_key) AS STRING))    AS detail,
          CASE WHEN count(*) = 730
                AND count(DISTINCT fiscal_year) = 2
                AND (SELECT fiscal_year FROM {{CORE}}dim_date WHERE date_key = DATE'2025-10-01') = 'FY2026'
@@ -25,7 +24,9 @@ c1 AS (
 -- 2. Region and state are codes, not names.
 c2 AS (
   SELECT 'region codes',
-         count(DISTINCT region), 4, count(DISTINCT state), NULL,
+         concat(cast(count(DISTINCT region) AS STRING), ' regions'),
+         concat(cast(count(DISTINCT state) AS STRING), ' states'),
+         concat('max code length ', cast(max(length(region)) AS STRING)),
          CASE WHEN count(DISTINCT region) = 4
                AND max(length(region)) <= 4
                AND max(length(state)) = 2
@@ -35,8 +36,9 @@ c2 AS (
 -- 3. Two product hierarchies that do not agree.
 c3 AS (
   SELECT 'product hierarchies',
-         count(DISTINCT product_category), 4,
-         count(DISTINCT regulatory_product_class), NULL,
+         concat(cast(count(DISTINCT product_category) AS STRING), ' business'),
+         concat(cast(count(DISTINCT regulatory_product_class) AS STRING), ' regulatory'),
+         'the two do not align',
          CASE WHEN count(DISTINCT product_category) = 4
                AND count(DISTINCT regulatory_product_class) >= 5
               THEN 'PASS' ELSE 'FAIL' END
@@ -45,9 +47,9 @@ c3 AS (
 -- 4. Status mix: settled, pending, declined, reversed.
 c4 AS (
   SELECT 'transaction status mix',
-         count(DISTINCT status), 4,
-         cast(round(100.0 * sum(CASE WHEN status = 'DECLINED' THEN 1 ELSE 0 END) / count(*), 1) AS INT),
-         NULL,
+         concat(cast(count(DISTINCT status) AS STRING), ' statuses'),
+         concat(cast(round(100.0 * sum(CASE WHEN status = 'DECLINED' THEN 1 ELSE 0 END) / count(*), 1) AS STRING), '% declined'),
+         concat(cast(round(100.0 * sum(CASE WHEN status = 'POSTED' THEN 1 ELSE 0 END) / count(*), 1) AS STRING), '% posted'),
          CASE WHEN count(DISTINCT status) = 4
                AND sum(CASE WHEN status = 'DECLINED' THEN 1 ELSE 0 END) > 0
               THEN 'PASS' ELSE 'FAIL' END
@@ -56,7 +58,9 @@ c4 AS (
 -- 5. Gross and net revenue differ, by a few percent.
 c5 AS (
   SELECT 'gross vs net revenue',
-         cast(round(100.0 * (g - n) / nullif(n, 0), 2) AS INT), NULL, NULL, NULL,
+         concat(cast(round(100.0 * (g - n) / nullif(n, 0), 2) AS STRING), '% overstated'),
+         concat('gross ', cast(round(g / 1e6) AS STRING), 'M'),
+         concat('net ', cast(round(n / 1e6) AS STRING), 'M'),
          CASE WHEN 100.0 * (g - n) / nullif(n, 0) BETWEEN 2 AND 8
               THEN 'PASS' ELSE 'FAIL' END
   FROM (
@@ -68,8 +72,9 @@ c5 AS (
 -- 6. The loan book is a daily snapshot, so summing across dates multiplies it.
 c6 AS (
   SELECT 'loan snapshot grain',
-         cast(round(all_dates / nullif(latest, 0)) AS INT), NULL,
-         cast(latest / 1e9 AS INT), NULL,
+         concat(cast(round(all_dates / nullif(latest, 0)) AS STRING), 'x if summed'),
+         concat('real book ', cast(round(latest / 1e9, 1) AS STRING), 'B'),
+         concat('summed ', cast(round(all_dates / 1e12, 1) AS STRING), 'T'),
          CASE WHEN all_dates / nullif(latest, 0) > 100 THEN 'PASS' ELSE 'FAIL' END
   FROM (
     SELECT sum(principal_balance) AS all_dates,
@@ -81,10 +86,10 @@ c6 AS (
 -- 7. Four distinct delinquency concepts, with materially different answers.
 c7 AS (
   SELECT 'delinquency definitions',
-         cast(round(100.0 * sum(CASE WHEN days_past_due >= 30 THEN 1 ELSE 0 END) / count(*)) AS INT),
-         NULL,
-         cast(round(100.0 * sum(CASE WHEN days_past_due >= 90 THEN 1 ELSE 0 END) / count(*)) AS INT),
-         NULL,
+         concat(cast(round(100.0 * sum(CASE WHEN days_past_due >= 30 THEN 1 ELSE 0 END) / count(*), 1) AS STRING), '% at 30+'),
+         concat(cast(round(100.0 * sum(CASE WHEN days_past_due >= 90 THEN 1 ELSE 0 END) / count(*), 1) AS STRING), '% at 90+'),
+         concat(cast(count(DISTINCT dpd_bucket) AS STRING), ' buckets, ',
+                cast(count(DISTINCT loan_status) AS STRING), ' statuses'),
          CASE WHEN count(DISTINCT dpd_bucket) = 5
                AND count(DISTINCT loan_status) = 4
               THEN 'PASS' ELSE 'FAIL' END
@@ -94,28 +99,36 @@ c7 AS (
 -- 8. Customer identifiers are present, so masking has something to protect.
 c8 AS (
   SELECT 'customer identifiers',
-         count(*), NULL, count(DISTINCT ssn_last4), NULL,
+         concat(cast(round(count(*) / 1e6, 1) AS STRING), 'M customers'),
+         concat(cast(count(DISTINCT ssn_last4) AS STRING), ' distinct ssn_last4'),
+         'masking has something to protect',
          CASE WHEN count(*) > 0 THEN 'PASS' ELSE 'FAIL' END
   FROM {{CORE}}dim_customer
 ),
 -- 9. More than one settlement currency, so conversion matters.
 c9 AS (
   SELECT 'multi-currency',
-         count(DISTINCT currency), 3, NULL, NULL,
+         concat(cast(count(DISTINCT currency) AS STRING), ' currencies'),
+         concat_ws(', ', array_sort(collect_set(currency))),
+         'conversion needs an as-of-date join',
          CASE WHEN count(DISTINCT currency) = 3 THEN 'PASS' ELSE 'FAIL' END
   FROM {{CORE}}fct_transactions
 ),
 -- 10. Determinism: the same key always produces the same row.
 c10 AS (
   SELECT 'determinism',
-         count(*), 1, NULL, NULL,
+         concat(cast(count(*) AS STRING), ' value for BR0001'),
+         'hash-derived, not rand()',
+         'identical for every learner',
          CASE WHEN count(*) = 1 THEN 'PASS' ELSE 'FAIL' END
   FROM (SELECT DISTINCT region FROM {{CORE}}dim_branch WHERE branch_id = 'BR0001')
 ),
 -- 11. Referential integrity through the join hub.
 c11 AS (
   SELECT 'referential integrity',
-         count(*), 0, NULL, NULL,
+         concat(cast(count(*) AS STRING), ' orphan transactions'),
+         'expected 0',
+         'every txn reaches an account',
          CASE WHEN count(*) = 0 THEN 'PASS' ELSE 'FAIL' END
   FROM {{CORE}}fct_transactions t
   LEFT JOIN {{CORE}}dim_account a ON a.account_id = t.account_id
@@ -124,8 +137,9 @@ c11 AS (
 -- 12. Row counts in the expected range for the small tier.
 c12 AS (
   SELECT 'row counts',
-         cast((SELECT count(*) FROM {{CORE}}fct_transactions) / 1000000 AS INT), 20,
-         cast((SELECT count(*) FROM {{CORE}}dim_customer) / 1000000 AS INT), NULL,
+         concat(cast(round((SELECT count(*) FROM {{CORE}}fct_transactions) / 1e6) AS STRING), 'M transactions'),
+         concat(cast(round((SELECT count(*) FROM {{CORE}}fct_loan_balances) / 1e6) AS STRING), 'M loan snapshots'),
+         concat(cast(round((SELECT count(*) FROM {{CORE}}dim_customer) / 1e6, 1) AS STRING), 'M customers'),
          CASE WHEN (SELECT count(*) FROM {{CORE}}fct_transactions) > 1000000
               THEN 'PASS' ELSE 'FAIL' END
 )

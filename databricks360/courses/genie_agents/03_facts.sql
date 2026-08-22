@@ -135,7 +135,10 @@ grid AS (
     d.snapshot_date,
     datediff(d.snapshot_date, DATE'2024-10-01')                        AS day_n,
     pmod(hash(concat('loan-orig-', la.account_id)), 400)               AS orig_pick,
-    pmod(hash(concat('loan-risk-', la.account_id)), 1000)              AS risk_pick
+    pmod(hash(concat('loan-risk-', la.account_id)), 1000)              AS risk_pick,
+    -- Per-account phase offset. Without it, day_n is the same for every account
+    -- on a given snapshot date and the whole book shares one days_past_due.
+    pmod(hash(concat('loan-phase-', la.account_id)), 400)              AS phase
   FROM loan_accounts la CROSS JOIN days d
   WHERE d.snapshot_date >= la.opened_date
 ),
@@ -143,14 +146,15 @@ shaped AS (
   SELECT
     account_id,
     snapshot_date,
+    phase,
     -- Original principal, amortising slowly over the window
     cast(round((15000 + orig_pick * 850) * (1 - day_n / 4000.0), 2) AS DECIMAL(14,2)) AS principal_balance,
     -- Riskier accounts accumulate days past due over time
     CASE
       WHEN risk_pick < 880 THEN 0
-      WHEN risk_pick < 940 THEN pmod(day_n, 45)
-      WHEN risk_pick < 980 THEN 30 + pmod(day_n, 60)
-      ELSE                      90 + pmod(day_n, 120)
+      WHEN risk_pick < 940 THEN pmod(day_n + phase, 45)
+      WHEN risk_pick < 980 THEN 30 + pmod(day_n + phase, 60)
+      ELSE                      90 + pmod(day_n + phase, 120)
     END AS days_past_due
   FROM grid
 )
