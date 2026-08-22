@@ -22,6 +22,9 @@ class InstalledNotebook:
     path: str
     slow: bool
     requires_admin: bool
+    required: bool = True
+    needed_for: str = ""
+    depends_on: str = ""
 
 
 @dataclass
@@ -52,15 +55,28 @@ class Installation:
             ]
             if skipped:
                 lines.append(f"  skipping: {', '.join(skipped)}")
-        lines += ["", "  Run these in order:"]
-        for nb in self.notebooks:
+        required = [nb for nb in self.notebooks if nb.required]
+        optional = [nb for nb in self.notebooks if not nb.required]
+
+        def row(nb: InstalledNotebook) -> str:
             flags = []
             if nb.slow:
                 flags.append("slow")
             if nb.requires_admin:
                 flags.append("needs admin")
+            if nb.depends_on:
+                flags.append(f"after {nb.depends_on}")
             suffix = f"   ({', '.join(flags)})" if flags else ""
-            lines.append(f"    {nb.order}. {nb.name}{suffix}")
+            return f"    {nb.order}. {nb.name}{suffix}"
+
+        lines += ["", "  Run these — the dataset is not usable without them:"]
+        lines += [row(nb) for nb in required]
+
+        if optional:
+            lines += ["", "  Then, as the course needs them:"]
+            for nb in optional:
+                purpose = f"  — {nb.needed_for}" if nb.needed_for else ""
+                lines.append(row(nb) + purpose)
         return "\n".join(lines)
 
 
@@ -225,6 +241,8 @@ def install(
             InstalledNotebook(
                 order=nb.order, name=nb.name, path=target,
                 slow=nb.slow, requires_admin=nb.requires_admin,
+                required=nb.required, needed_for=nb.needed_for,
+                depends_on=nb.depends_on,
             )
         )
 

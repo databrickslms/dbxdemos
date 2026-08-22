@@ -194,7 +194,7 @@ def test_dry_run_install_needs_no_workspace():
     assert len(result.notebooks) == len(COURSE.notebooks)
     assert [n.order for n in result.notebooks] == [1, 2, 3, 4, 5, 6, 7, 99]
     rendered = repr(result)
-    assert "Run these in order" in rendered
+    assert "Run these" in rendered
     assert "slow" in rendered, "the facts notebook should be flagged slow"
     assert "needs admin" in rendered, "governance should be flagged as needing privilege"
 
@@ -411,3 +411,57 @@ def test_no_unresolved_placeholders_with_a_prefix():
 def test_install_shows_an_example_object_name():
     result = install("genie-agents", dry_run=True, schema="genie_agent", table_prefix="mfg_")
     assert "genie_agent.mfg_core_dim_date" in repr(result)
+
+
+# ── Which notebooks are actually required ────────────────────────────────────
+
+def test_only_the_first_three_are_required():
+    required = [n.name for n in COURSE.notebooks if n.required]
+    assert required == ["01_catalog_and_schemas", "02_dimensions", "03_facts"]
+
+
+def test_optional_notebooks_say_what_they_are_for():
+    for nb in COURSE.notebooks:
+        if not nb.required:
+            assert nb.needed_for, f"{nb.name} is optional but does not say why to run it"
+
+
+def test_governance_does_not_depend_on_staging():
+    """05 used to tag tables that 04 creates, so skipping 04 broke 05. Objects are
+    now tagged where they are created."""
+    gov = next(n for n in COURSE.notebooks if n.name == "05_governance")
+    src = build_notebook_source(COURSE, gov, catalog=None, tier="small")
+    assert "fct_txn_legacy" not in src.replace("in notebook 04", "")
+    assert "fct_transactions_raw" not in src
+
+    staging = next(n for n in COURSE.notebooks if n.name == "04_staging")
+    src04 = build_notebook_source(COURSE, staging, catalog=None, tier="small")
+    assert "SET TAGS" in src04, "04 should tag its own objects"
+    assert "deprecated" in src04
+
+
+def test_metric_view_declares_its_dependency():
+    mv = next(n for n in COURSE.notebooks if n.name == "07_metric_view")
+    assert mv.depends_on == "06_curated"
+    src = build_notebook_source(COURSE, mv, catalog=None, tier="small")
+    # It sources views that 06 creates, so the dependency is real, not advisory.
+    assert "vw_transactions_net" in src
+    assert "dim_customer_safe" in src
+
+
+def test_validate_needs_only_the_required_notebooks():
+    """99 must work on a minimal install, or it cannot confirm one."""
+    val = next(n for n in COURSE.notebooks if n.name == "99_validate")
+    src = build_notebook_source(COURSE, val, catalog=None, tier="small")
+    for optional_object in ["fct_txn_legacy", "fct_transactions_raw",
+                            "vw_transactions_net", "vw_loan_book_eop",
+                            "mv_banking_metrics"]:
+        assert optional_object not in src, f"99 references {optional_object} from an optional notebook"
+
+
+def test_install_summary_separates_required_from_optional():
+    rendered = repr(install("genie-agents", dry_run=True))
+    assert "not usable without them" in rendered
+    assert "as the course needs them" in rendered
+    assert "Modules 6, 7, 12, 13" in rendered
+    assert "after 06_curated" in rendered

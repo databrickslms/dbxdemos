@@ -808,6 +808,16 @@ FROM {{CORE}}fct_transactions t
 WHERE t.txn_date < DATE'2025-10-01';
 
 
+-- ============================================================================
+-- Mark both as superseded, so nobody has to ask which table to use
+-- ============================================================================
+ALTER TABLE {{STAGING}}fct_txn_legacy
+  SET TAGS ('deprecated' = 'true', 'superseded_by' = 'fct_transactions');
+
+ALTER TABLE {{STAGING}}fct_transactions_raw
+  SET TAGS ('deprecated' = 'true', 'note' = 'raw landing table, not for reporting');
+
+
 -- ----------------------------------------------------------------------------
 -- Row counts and width
 -- ----------------------------------------------------------------------------

@@ -80,11 +80,8 @@ ALTER TABLE {{CORE}}dim_customer ALTER COLUMN annual_income
 ALTER TABLE {{CORE}}fct_transactions
   SET TAGS ('certified' = 'true', 'owner' = 'cards_analytics');
 
-ALTER TABLE {{STAGING}}fct_txn_legacy
-  SET TAGS ('deprecated' = 'true', 'superseded_by' = 'fct_transactions');
-
-ALTER TABLE {{STAGING}}fct_transactions_raw
-  SET TAGS ('deprecated' = 'true', 'note' = 'raw landing table, not for reporting');
+-- The staging objects are tagged in notebook 04, where they are created, so
+-- this notebook does not depend on 04 having been run.
 
 
 -- ----------------------------------------------------------------------------

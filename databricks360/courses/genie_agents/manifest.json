@@ -25,14 +25,16 @@
       "name": "01_catalog_and_schemas",
       "sql": "01_catalog_and_schemas.sql",
       "title": "01 · Catalog and schemas",
-      "intro": "Creates the schemas and the documents volume for the Meridian lab.\n\nThe first cell shows which catalog you are working in. Check it before running 02 — everything else lands there."
+      "intro": "Creates the schemas and the documents volume for the Meridian lab.\n\nThe first cell shows which catalog you are working in. Check it before running 02 — everything else lands there.",
+      "required": true
     },
     {
       "order": 2,
       "name": "02_dimensions",
       "sql": "02_dimensions.sql",
       "title": "02 · Dimensions",
-      "intro": "Six dimensions: dates, branches, products, customers, accounts and FX rates.\n\nEvery value derives from `hash()` of the row key rather than `rand()`, and ages anchor to a fixed date rather than today. Your data is therefore byte-identical to everyone else's, which is what lets the benchmarks later in the course compare against a known answer."
+      "intro": "Six dimensions: dates, branches, products, customers, accounts and FX rates.\n\nEvery value derives from `hash()` of the row key rather than `rand()`, and ages anchor to a fixed date rather than today. Your data is therefore byte-identical to everyone else's, which is what lets the benchmarks later in the course compare against a known answer.",
+      "required": true
     },
     {
       "order": 3,
@@ -40,14 +42,17 @@
       "sql": "03_facts.sql",
       "title": "03 · Facts",
       "intro": "Five fact tables: transactions, reversals, the daily loan book, credit applications and fraud cases.\n\n**This is the slow one** — it generates {{TXN_COUNT}} transactions plus roughly 35M daily loan-balance snapshots. Expect several minutes on a small warehouse, longer if it is cold.\n\nRead the row counts it prints at the end. You will be asked about them.",
-      "slow": true
+      "slow": true,
+      "required": true
     },
     {
       "order": 4,
       "name": "04_staging",
       "sql": "04_staging.sql",
       "title": "04 · Staging",
-      "intro": "Two objects that exist in most real lakehouses and that nobody has cleaned up: a very wide raw landing table, and a superseded revenue table still sitting next to its replacement.\n\nThey are here because deciding what *not* to point an agent at is part of the job."
+      "intro": "Two objects that exist in most real lakehouses and that nobody has cleaned up: a very wide raw landing table, and a superseded revenue table still sitting next to its replacement.\n\nThey are here because deciding what *not* to point an agent at is part of the job.",
+      "required": false,
+      "needed_for": "Modules 6, 7, 12, 13"
     },
     {
       "order": 5,
@@ -55,28 +60,37 @@
       "sql": "05_governance.sql",
       "title": "05 · Governance",
       "intro": "Row-level and column-level access control, plus certification tags.\n\n**Needs privilege** to create functions and ALTER the tables, and the `mfg_*` account groups to exist. If you cannot run it, skip it — everything else still works.",
-      "requires_admin": true
+      "requires_admin": true,
+      "required": false,
+      "needed_for": "Module 6"
     },
     {
       "order": 6,
       "name": "06_curated",
       "sql": "06_curated.sql",
       "title": "06 · Curated layer",
-      "intro": "The objects an agent should actually be pointed at: net-revenue and month-end views, a customer view without identifiers, and three Unity Catalog functions.\n\n**Attempt the curation exercise before running this.** It is the worked answer — opening it first turns an exercise into a reading task."
+      "intro": "The objects an agent should actually be pointed at: net-revenue and month-end views, a customer view without identifiers, and three Unity Catalog functions.\n\n**Attempt the curation exercise before running this.** It is the worked answer — opening it first turns an exercise into a reading task.",
+      "required": false,
+      "needed_for": "Modules 7, 15"
     },
     {
       "order": 7,
       "name": "07_metric_view",
       "sql": "07_metric_view.sql",
       "title": "07 · Metric view",
-      "intro": "One definition of each headline metric, declared once and correct however it is grouped at query time.\n\nDefining \"net fee revenue\" separately in five places is how five teams end up with five numbers."
+      "intro": "One definition of each headline metric, declared once and correct however it is grouped at query time.\n\nDefining \"net fee revenue\" separately in five places is how five teams end up with five numbers.",
+      "required": false,
+      "needed_for": "Modules 7, 15",
+      "depends_on": "06_curated"
     },
     {
       "order": 99,
       "name": "99_validate",
       "sql": "99_validate.sql",
       "title": "99 · Validate",
-      "intro": "Twelve checks confirming the dataset is complete and behaving as expected. Every row should read PASS.\n\nRead the numbers, not just the verdicts — several of them are the point."
+      "intro": "Twelve checks confirming the dataset is complete and behaving as expected. Every row should read PASS.\n\nRead the numbers, not just the verdicts — several of them are the point.",
+      "required": false,
+      "needed_for": "checking your install"
     }
   ]
 }

@@ -19,6 +19,9 @@ class Notebook:
     intro: str = ""
     requires_admin: bool = False
     slow: bool = False
+    required: bool = True
+    needed_for: str = ""
+    depends_on: str = ""
 
 
 @dataclass(frozen=True)
@@ -76,6 +79,9 @@ def _load(pkg_name: str) -> Course:
                 intro=n.get("intro", ""),
                 requires_admin=n.get("requires_admin", False),
                 slow=n.get("slow", False),
+                required=n.get("required", True),
+                needed_for=n.get("needed_for", ""),
+                depends_on=n.get("depends_on", ""),
             )
             for n in sorted(raw["notebooks"], key=lambda n: n["order"])
         ],
