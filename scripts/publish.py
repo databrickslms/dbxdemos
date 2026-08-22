@@ -127,6 +127,15 @@ def main() -> int:
 
     print(f"\n  publishing {PKG} {v}\n")
 
+    # Clear stale artifacts BEFORE preflight. Preflight blocks on a dist/ from
+    # another version — correct when checking by hand, but this script rebuilds
+    # from scratch anyway, so leaving them would block every release on a
+    # problem it was about to fix.
+    stale = [p for p in (ROOT / "dist").glob("*") if v not in p.name] if (ROOT / "dist").is_dir() else []
+    if stale:
+        print(f"  clearing {len(stale)} stale artifact(s) from dist/")
+        shutil.rmtree(ROOT / "dist", ignore_errors=True)
+
     # 1. Preflight ------------------------------------------------------------
     pre = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "preflight.py")], cwd=ROOT
