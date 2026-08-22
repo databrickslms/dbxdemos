@@ -40,6 +40,7 @@ class Installation:
         ]
         if self.layout:
             lines.append(f"  {self.layout.describe()}")
+            lines.append(f"  e.g. {self.layout.example()}")
             skipped = [
                 label for label, on in (
                     # Not "skipped" when no catalog was named — describe() already
@@ -135,6 +136,7 @@ def install(
     path: str | None = None,
     catalog: str | None = None,
     schema: str | None = None,
+    table_prefix: str | None = None,
     tier: str | None = None,
     create_catalog: bool = False,
     create_schema: bool | None = None,
@@ -158,6 +160,12 @@ def install(
 
     Passing `schema` puts every object in that one schema and assumes you cannot
     create it either, since that is why you would reach for it.
+
+    In a schema shared with other content, prefix the object names so their
+    provenance is visible:
+
+        install('genie-agents', schema='genie_agent', table_prefix='mfg_')
+        # -> genie_agent.mfg_core_dim_date, genie_agent.mfg_ref_documents
     """
     from ._catalog import get_course
 
@@ -168,6 +176,7 @@ def install(
     layout = resolve_layout(
         catalog=catalog,
         schema=schema,
+        table_prefix=table_prefix,
         create_catalog=create_catalog,
         create_schema=create_schema,
         create_volume=create_volume,

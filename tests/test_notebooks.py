@@ -287,3 +287,71 @@ def test_install_reports_what_it_skipped():
     assert "single schema: main.training_you" in rendered
     assert "CREATE CATALOG" in rendered and "CREATE SCHEMA" in rendered
     assert "CREATE VOLUME" in rendered
+
+
+# ── Table-name prefixes for a shared schema ──────────────────────────────────
+
+def test_table_prefix_folds_the_group_into_object_names():
+    layout = resolve_layout(schema="genie_agent", table_prefix="mfg_")
+    src = build_notebook_source(COURSE, COURSE.notebooks[1], catalog=None, tier="small", layout=layout)
+    assert "genie_agent.mfg_core_dim_date" in src
+    assert "genie_agent.mfg_core_dim_branch" in src
+    # No unprefixed leftovers.
+    assert "genie_agent.dim_date" not in src
+
+
+def test_table_prefix_reaches_facts_and_joins():
+    layout = resolve_layout(catalog="main", schema="genie_agent", table_prefix="mfg_")
+    src = build_notebook_source(COURSE, COURSE.notebooks[2], catalog="main", tier="small", layout=layout)
+    assert "main.genie_agent.mfg_core_fct_transactions" in src
+    # The joins must be prefixed too, or 03 breaks against 02's output.
+    assert "main.genie_agent.mfg_core_dim_account" in src
+    assert "main.genie_agent.mfg_core_dim_customer" in src
+
+
+def test_prefixed_volume_lands_in_the_same_schema():
+    layout = resolve_layout(schema="genie_agent", table_prefix="mfg_")
+    src = build_notebook_source(COURSE, COURSE.notebooks[0], catalog=None, tier="small", layout=layout)
+    assert "CREATE VOLUME IF NOT EXISTS genie_agent.mfg_ref_documents" in src
+    # Single-schema assumes you cannot create the schema, so it says so instead.
+    assert "Skipping CREATE SCHEMA" in src
+
+
+def test_prefix_never_leaks_into_the_schema_name():
+    """The prefix names objects, not the schema that holds them."""
+    layout = resolve_layout(schema="genie_agent", table_prefix="mfg_", create_schema=True)
+    src = build_notebook_source(COURSE, COURSE.notebooks[0], catalog=None, tier="small", layout=layout)
+    assert "CREATE SCHEMA IF NOT EXISTS genie_agent" in src
+    assert "mfg_core_genie_agent" not in src
+    assert "CREATE SCHEMA IF NOT EXISTS genie_agent.mfg" not in src
+
+
+def test_prefix_without_a_schema_is_rejected():
+    try:
+        resolve_layout(table_prefix="mfg_")
+    except ValueError as exc:
+        assert "single-schema" in str(exc)
+    else:
+        raise AssertionError("table_prefix with no schema should raise")
+
+
+def test_prefix_must_be_a_safe_identifier():
+    for bad in ["mfg-", "mfg.", "mfg core"]:
+        try:
+            resolve_layout(schema="s", table_prefix=bad)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"{bad!r} should have been rejected")
+
+
+def test_no_unresolved_placeholders_with_a_prefix():
+    layout = resolve_layout(catalog="main", schema="genie_agent", table_prefix="mfg_")
+    for nb in COURSE.notebooks:
+        src = build_notebook_source(COURSE, nb, catalog="main", tier="small", layout=layout)
+        assert unresolved_placeholders(src) == [], nb.sql
+
+
+def test_install_shows_an_example_object_name():
+    result = install("genie-agents", dry_run=True, schema="genie_agent", table_prefix="mfg_")
+    assert "genie_agent.mfg_core_dim_date" in repr(result)

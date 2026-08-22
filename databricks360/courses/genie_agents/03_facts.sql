@@ -13,7 +13,7 @@
 -- ============================================================================
 -- fct_transactions  —  transaction-level fact
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CORE}}.fct_transactions
+CREATE OR REPLACE TABLE {{CORE}}fct_transactions
 COMMENT 'Transaction-level fact.'
 AS
 WITH t AS (
@@ -73,25 +73,25 @@ SELECT
        ELSE 'USD' END                                           AS currency,
   s.status
 FROM shaped s
-JOIN {{CORE}}.dim_account  a ON a.account_id  = s.account_id
-JOIN {{CORE}}.dim_customer c ON c.customer_id = a.customer_id;
+JOIN {{CORE}}dim_account  a ON a.account_id  = s.account_id
+JOIN {{CORE}}dim_customer c ON c.customer_id = a.customer_id;
 
-ALTER TABLE {{CORE}}.fct_transactions ALTER COLUMN fee_revenue
+ALTER TABLE {{CORE}}fct_transactions ALTER COLUMN fee_revenue
   COMMENT 'Fee revenue in transaction currency.';
-ALTER TABLE {{CORE}}.fct_transactions ALTER COLUMN status
+ALTER TABLE {{CORE}}fct_transactions ALTER COLUMN status
   COMMENT 'Transaction status.';
-ALTER TABLE {{CORE}}.fct_transactions ALTER COLUMN currency
+ALTER TABLE {{CORE}}fct_transactions ALTER COLUMN currency
   COMMENT 'Settlement currency.';
-ALTER TABLE {{CORE}}.fct_transactions ALTER COLUMN amount
+ALTER TABLE {{CORE}}fct_transactions ALTER COLUMN amount
   COMMENT 'Transaction amount.';
-ALTER TABLE {{CORE}}.fct_transactions ALTER COLUMN merchant_category
+ALTER TABLE {{CORE}}fct_transactions ALTER COLUMN merchant_category
   COMMENT 'Merchant category.';
 
 
 -- ============================================================================
 -- fct_reversals  —  reversals and chargebacks
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CORE}}.fct_reversals
+CREATE OR REPLACE TABLE {{CORE}}fct_reversals
 COMMENT 'Reversals and chargebacks.'
 AS
 SELECT
@@ -100,15 +100,15 @@ SELECT
   cast(round(t.fee_revenue, 2) AS DECIMAL(14,2))                         AS reversal_amount,
   element_at(array('DISPUTE','FRAUD','DUPLICATE','MERCHANT_ERROR','AUTHORISATION_FAIL'),
              pmod(hash(concat('rev-reason-', t.txn_id)), 5) + 1)         AS reason_code
-FROM {{CORE}}.fct_transactions t
+FROM {{CORE}}fct_transactions t
 -- ~3.5% of POSTED transactions get reversed, which is why "revenue" is
 -- overstated by a few percent and nobody notices.
 WHERE t.status = 'POSTED'
   AND pmod(hash(concat('rev-flag-', t.txn_id)), 1000) < 35;
 
-ALTER TABLE {{CORE}}.fct_reversals ALTER COLUMN reversal_amount
+ALTER TABLE {{CORE}}fct_reversals ALTER COLUMN reversal_amount
   COMMENT 'Amount reversed.';
-ALTER TABLE {{CORE}}.fct_reversals ALTER COLUMN reason_code
+ALTER TABLE {{CORE}}fct_reversals ALTER COLUMN reason_code
   COMMENT 'Reversal reason code.';
 
 
@@ -116,13 +116,13 @@ ALTER TABLE {{CORE}}.fct_reversals ALTER COLUMN reason_code
 -- fct_loan_balances  —  daily loan-book snapshot
 -- Roughly 1.4M rows per month.
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CORE}}.fct_loan_balances
+CREATE OR REPLACE TABLE {{CORE}}fct_loan_balances
 COMMENT 'Loan balance snapshot.'
 AS
 WITH loan_accounts AS (
   SELECT a.account_id, a.opened_date
-  FROM {{CORE}}.dim_account a
-  JOIN {{CORE}}.dim_product p ON p.product_id = a.product_id
+  FROM {{CORE}}dim_account a
+  JOIN {{CORE}}dim_product p ON p.product_id = a.product_id
   WHERE p.product_category = 'LENDING'
     AND pmod(hash(concat('loan-pick-', a.account_id)), 100) < 6   -- ~6% sample
 ),
@@ -175,20 +175,20 @@ SELECT
   END AS loan_status
 FROM shaped;
 
-ALTER TABLE {{CORE}}.fct_loan_balances ALTER COLUMN principal_balance
+ALTER TABLE {{CORE}}fct_loan_balances ALTER COLUMN principal_balance
   COMMENT 'Outstanding principal.';
-ALTER TABLE {{CORE}}.fct_loan_balances ALTER COLUMN days_past_due
+ALTER TABLE {{CORE}}fct_loan_balances ALTER COLUMN days_past_due
   COMMENT 'Days past due.';
-ALTER TABLE {{CORE}}.fct_loan_balances ALTER COLUMN dpd_bucket
+ALTER TABLE {{CORE}}fct_loan_balances ALTER COLUMN dpd_bucket
   COMMENT 'DPD bucket.';
-ALTER TABLE {{CORE}}.fct_loan_balances ALTER COLUMN loan_status
+ALTER TABLE {{CORE}}fct_loan_balances ALTER COLUMN loan_status
   COMMENT 'Loan lifecycle status.';
 
 
 -- ============================================================================
 -- fct_applications  —  approval funnel and cycle time
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CORE}}.fct_applications
+CREATE OR REPLACE TABLE {{CORE}}fct_applications
 COMMENT 'Credit application fact.'
 AS
 WITH ap AS (SELECT id AS n FROM range(1, 420001)),
@@ -222,18 +222,18 @@ SELECT
        ELSE                     'BROKER' END                AS channel
 FROM calc;
 
-ALTER TABLE {{CORE}}.fct_applications ALTER COLUMN decision
+ALTER TABLE {{CORE}}fct_applications ALTER COLUMN decision
   COMMENT 'Underwriting decision.';
-ALTER TABLE {{CORE}}.fct_applications ALTER COLUMN funded_ts
+ALTER TABLE {{CORE}}fct_applications ALTER COLUMN funded_ts
   COMMENT 'Funding timestamp.';
-ALTER TABLE {{CORE}}.fct_applications ALTER COLUMN channel
+ALTER TABLE {{CORE}}fct_applications ALTER COLUMN channel
   COMMENT 'Origination channel.';
 
 
 -- ============================================================================
 -- fct_fraud_cases
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CORE}}.fct_fraud_cases
+CREATE OR REPLACE TABLE {{CORE}}fct_fraud_cases
 COMMENT 'Fraud case fact.'
 AS
 WITH f AS (SELECT id AS n FROM range(1, 14001)),
@@ -262,18 +262,18 @@ SELECT
   CASE WHEN stat_pick < 84 THEN 'CLOSED' ELSE 'OPEN' END   AS status
 FROM calc;
 
-ALTER TABLE {{CORE}}.fct_fraud_cases ALTER COLUMN fraud_type
+ALTER TABLE {{CORE}}fct_fraud_cases ALTER COLUMN fraud_type
   COMMENT 'Fraud typology.';
-ALTER TABLE {{CORE}}.fct_fraud_cases ALTER COLUMN loss_amount
+ALTER TABLE {{CORE}}fct_fraud_cases ALTER COLUMN loss_amount
   COMMENT 'Realised loss, USD.';
 
 
 -- ----------------------------------------------------------------------------
 -- Row counts
 -- ----------------------------------------------------------------------------
-SELECT 'fct_transactions'  AS table_name, count(*) AS rows FROM {{CORE}}.fct_transactions
-UNION ALL SELECT 'fct_reversals',      count(*) FROM {{CORE}}.fct_reversals
-UNION ALL SELECT 'fct_loan_balances',  count(*) FROM {{CORE}}.fct_loan_balances
-UNION ALL SELECT 'fct_applications',   count(*) FROM {{CORE}}.fct_applications
-UNION ALL SELECT 'fct_fraud_cases',    count(*) FROM {{CORE}}.fct_fraud_cases
+SELECT 'fct_transactions'  AS table_name, count(*) AS rows FROM {{CORE}}fct_transactions
+UNION ALL SELECT 'fct_reversals',      count(*) FROM {{CORE}}fct_reversals
+UNION ALL SELECT 'fct_loan_balances',  count(*) FROM {{CORE}}fct_loan_balances
+UNION ALL SELECT 'fct_applications',   count(*) FROM {{CORE}}fct_applications
+UNION ALL SELECT 'fct_fraud_cases',    count(*) FROM {{CORE}}fct_fraud_cases
 ORDER BY table_name;

@@ -15,7 +15,7 @@
 -- dim_date  —  calendar with Meridian fiscal attributes
 -- Covers 2024-10-01 to 2026-09-30.
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CORE}}.dim_date
+CREATE OR REPLACE TABLE {{CORE}}dim_date
 COMMENT 'Date dimension with fiscal and calendar attributes.'
 AS
 WITH d AS (
@@ -53,22 +53,22 @@ SELECT
   END                                                                 AS is_business_day
 FROM calc;
 
-ALTER TABLE {{CORE}}.dim_date ALTER COLUMN date_key
+ALTER TABLE {{CORE}}dim_date ALTER COLUMN date_key
   COMMENT 'Calendar date. One row per day.';
-ALTER TABLE {{CORE}}.dim_date ALTER COLUMN fiscal_year
+ALTER TABLE {{CORE}}dim_date ALTER COLUMN fiscal_year
   COMMENT 'Fiscal year label.';
-ALTER TABLE {{CORE}}.dim_date ALTER COLUMN fiscal_quarter
+ALTER TABLE {{CORE}}dim_date ALTER COLUMN fiscal_quarter
   COMMENT 'Fiscal quarter label.';
-ALTER TABLE {{CORE}}.dim_date ALTER COLUMN calendar_year
+ALTER TABLE {{CORE}}dim_date ALTER COLUMN calendar_year
   COMMENT 'Calendar year.';
-ALTER TABLE {{CORE}}.dim_date ALTER COLUMN is_business_day
+ALTER TABLE {{CORE}}dim_date ALTER COLUMN is_business_day
   COMMENT 'Business day indicator.';
 
 
 -- ============================================================================
 -- dim_branch  —  the 340-branch network
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CORE}}.dim_branch
+CREATE OR REPLACE TABLE {{CORE}}dim_branch
 COMMENT 'Branch dimension.'
 AS
 WITH b AS (SELECT id AS n FROM range(1, 341)),
@@ -104,18 +104,18 @@ SELECT
   date_add(DATE'2006-01-01', open_offset) AS opened_date
 FROM assigned;
 
-ALTER TABLE {{CORE}}.dim_branch ALTER COLUMN region
+ALTER TABLE {{CORE}}dim_branch ALTER COLUMN region
   COMMENT 'Region code.';
-ALTER TABLE {{CORE}}.dim_branch ALTER COLUMN state
+ALTER TABLE {{CORE}}dim_branch ALTER COLUMN state
   COMMENT 'State code.';
-ALTER TABLE {{CORE}}.dim_branch ALTER COLUMN channel
+ALTER TABLE {{CORE}}dim_branch ALTER COLUMN channel
   COMMENT 'Servicing model.';
 
 
 -- ============================================================================
 -- dim_product  —  product master
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CORE}}.dim_product
+CREATE OR REPLACE TABLE {{CORE}}dim_product
 COMMENT 'Product master.'
 AS
 SELECT * FROM VALUES
@@ -141,9 +141,9 @@ SELECT * FROM VALUES
   ('P20','Traditional IRA',              'WEALTH','OFF_BALANCE_SHEET')
 AS t(product_id, product_name, product_category, regulatory_product_class);
 
-ALTER TABLE {{CORE}}.dim_product ALTER COLUMN product_category
+ALTER TABLE {{CORE}}dim_product ALTER COLUMN product_category
   COMMENT 'Product category.';
-ALTER TABLE {{CORE}}.dim_product ALTER COLUMN regulatory_product_class
+ALTER TABLE {{CORE}}dim_product ALTER COLUMN regulatory_product_class
   COMMENT 'Regulatory product class.';
 
 
@@ -152,7 +152,7 @@ ALTER TABLE {{CORE}}.dim_product ALTER COLUMN regulatory_product_class
 -- All values are synthetic. Emails use example.com (RFC 2606 reserved) and
 -- ssn_last4 is a hashed 4-digit string derived from nothing real.
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CORE}}.dim_customer
+CREATE OR REPLACE TABLE {{CORE}}dim_customer
 COMMENT 'Customer dimension. Synthetic data.'
 AS
 WITH c AS (SELECT id AS n FROM range(1, 2100001)),
@@ -182,24 +182,24 @@ SELECT
   cast(25000 + inc_pick * 1250 AS DECIMAL(12,2)) AS annual_income
 FROM calc;
 
-ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN segment
+ALTER TABLE {{CORE}}dim_customer ALTER COLUMN segment
   COMMENT 'Customer segment.';
-ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN tenure_months
+ALTER TABLE {{CORE}}dim_customer ALTER COLUMN tenure_months
   COMMENT 'Relationship tenure in months.';
-ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN ssn_last4
+ALTER TABLE {{CORE}}dim_customer ALTER COLUMN ssn_last4
   COMMENT 'Last four digits of tax identifier.';
-ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN email
+ALTER TABLE {{CORE}}dim_customer ALTER COLUMN email
   COMMENT 'Contact email.';
-ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN dob
+ALTER TABLE {{CORE}}dim_customer ALTER COLUMN dob
   COMMENT 'Date of birth.';
-ALTER TABLE {{CORE}}.dim_customer ALTER COLUMN annual_income
+ALTER TABLE {{CORE}}dim_customer ALTER COLUMN annual_income
   COMMENT 'Self-reported annual income, USD.';
 
 
 -- ============================================================================
 -- dim_account  —  account master
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CORE}}.dim_account
+CREATE OR REPLACE TABLE {{CORE}}dim_account
 COMMENT 'Account master.'
 AS
 WITH a AS (SELECT id AS n FROM range(1, 2900001)),
@@ -225,16 +225,16 @@ SELECT
   CASE WHEN status_pick < 8 THEN 'CLOSED' ELSE 'OPEN' END    AS status
 FROM calc;
 
-ALTER TABLE {{CORE}}.dim_account ALTER COLUMN status
+ALTER TABLE {{CORE}}dim_account ALTER COLUMN status
   COMMENT 'Account status.';
-ALTER TABLE {{CORE}}.dim_account ALTER COLUMN closed_date
+ALTER TABLE {{CORE}}dim_account ALTER COLUMN closed_date
   COMMENT 'Closure date.';
 
 
 -- ============================================================================
 -- dim_fx_rate  —  daily FX rates to USD
 -- ============================================================================
-CREATE OR REPLACE TABLE {{CORE}}.dim_fx_rate
+CREATE OR REPLACE TABLE {{CORE}}dim_fx_rate
 COMMENT 'Daily FX rates to USD.'
 AS
 WITH d AS (
@@ -252,17 +252,17 @@ SELECT
   END AS usd_rate
 FROM d CROSS JOIN cur;
 
-ALTER TABLE {{CORE}}.dim_fx_rate ALTER COLUMN usd_rate
+ALTER TABLE {{CORE}}dim_fx_rate ALTER COLUMN usd_rate
   COMMENT 'Rate to USD.';
 
 
 -- ----------------------------------------------------------------------------
 -- Row counts
 -- ----------------------------------------------------------------------------
-SELECT 'dim_date'     AS table_name, count(*) AS rows FROM {{CORE}}.dim_date
-UNION ALL SELECT 'dim_branch',   count(*) FROM {{CORE}}.dim_branch
-UNION ALL SELECT 'dim_product',  count(*) FROM {{CORE}}.dim_product
-UNION ALL SELECT 'dim_customer', count(*) FROM {{CORE}}.dim_customer
-UNION ALL SELECT 'dim_account',  count(*) FROM {{CORE}}.dim_account
-UNION ALL SELECT 'dim_fx_rate',  count(*) FROM {{CORE}}.dim_fx_rate
+SELECT 'dim_date'     AS table_name, count(*) AS rows FROM {{CORE}}dim_date
+UNION ALL SELECT 'dim_branch',   count(*) FROM {{CORE}}dim_branch
+UNION ALL SELECT 'dim_product',  count(*) FROM {{CORE}}dim_product
+UNION ALL SELECT 'dim_customer', count(*) FROM {{CORE}}dim_customer
+UNION ALL SELECT 'dim_account',  count(*) FROM {{CORE}}dim_account
+UNION ALL SELECT 'dim_fx_rate',  count(*) FROM {{CORE}}dim_fx_rate
 ORDER BY table_name;

@@ -27,10 +27,15 @@ class Layout:
     which is expressed as unqualified two-level names so SQL resolves it itself."""
 
     catalog: str | None
+    # Each of these is a fully-qualified PREFIX ending in its own separator, so
+    # SQL writes {{CORE}}dim_date. That lets one placeholder express schema
+    # namespacing ("mfg.core.") or a table-name prefix inside a single shared
+    # schema ("main.genie_agent.mfg_core_").
     core: str
     ref: str
     staging: str
     schemas: tuple[str, ...]
+    table_prefix: str | None
     create_catalog: bool
     create_schema: bool
     create_volume: bool
@@ -47,8 +52,21 @@ class Layout:
     def describe(self) -> str:
         where = self.catalog or "current_catalog()"
         if self.is_single_schema:
-            return f"single schema: {where}.{self.single_schema}"
+            line = f"single schema: {where}.{self.single_schema}"
+            if self.table_prefix:
+                line += f"    table prefix: {self.table_prefix}<group>_"
+            return line
         return f"catalog: {where}    schemas: {', '.join(self.schemas)}"
+
+    def schema_path(self) -> str:
+        """The bare schema, without any table prefix."""
+        base = self.catalog or ""
+        schema = self.single_schema or "core"
+        return f"{base}.{schema}" if base else schema
+
+    def example(self) -> str:
+        """A representative object name, for the install summary."""
+        return f"{self.core}dim_date"
 
 
 def _qualify(catalog: str | None, schema: str) -> str:
@@ -56,10 +74,19 @@ def _qualify(catalog: str | None, schema: str) -> str:
     return schema if catalog is None else f"{catalog}.{schema}"
 
 
+def _prefix(catalog: str | None, schema: str, group: str, table_prefix: str | None) -> str:
+    """Build the fully-qualified object prefix, separator included."""
+    base = _qualify(catalog, schema)
+    if table_prefix is None:
+        return f"{base}."
+    return f"{base}.{table_prefix}{group}_"
+
+
 def resolve(
     *,
     catalog: str | None = None,
     schema: str | None = None,
+    table_prefix: str | None = None,
     create_catalog: bool = False,
     create_schema: bool | None = None,
     create_volume: bool = True,
@@ -82,26 +109,35 @@ def resolve(
             "current_catalog() already exists by definition."
         )
 
+    if table_prefix is not None and not table_prefix.replace("_", "").isalnum():
+        raise ValueError(f"table_prefix must be alphanumeric or underscores, got {table_prefix!r}")
+
     if schema is None:
+        if table_prefix is not None:
+            raise ValueError(
+                "table_prefix only applies to the single-schema layout — pass schema='name' "
+                "too, or drop the prefix and let the schemas namespace the objects."
+            )
         return Layout(
             catalog=catalog,
-            core=_qualify(catalog, "core"),
-            ref=_qualify(catalog, "ref"),
-            staging=_qualify(catalog, "staging"),
+            core=f'{_qualify(catalog, "core")}.',
+            ref=f'{_qualify(catalog, "ref")}.',
+            staging=f'{_qualify(catalog, "staging")}.',
             schemas=("core", "ref", "staging"),
+            table_prefix=None,
             create_catalog=create_catalog,
             create_schema=True if create_schema is None else create_schema,
             create_volume=create_volume,
             single_schema=None,
         )
 
-    target = _qualify(catalog, schema)
     return Layout(
         catalog=catalog,
-        core=target,
-        ref=target,
-        staging=target,
+        core=_prefix(catalog, schema, "core", table_prefix),
+        ref=_prefix(catalog, schema, "ref", table_prefix),
+        staging=_prefix(catalog, schema, "staging", table_prefix),
         schemas=(schema,),
+        table_prefix=table_prefix,
         create_catalog=create_catalog,
         create_schema=False if create_schema is None else create_schema,
         create_volume=create_volume,
@@ -143,24 +179,24 @@ def setup_ddl(layout: Layout) -> str:
     if layout.create_schema:
         if layout.is_single_schema:
             cells.append(
-                f"CREATE SCHEMA IF NOT EXISTS {layout.core}\n"
+                f"CREATE SCHEMA IF NOT EXISTS {layout.schema_path()}\n"
                 "  COMMENT 'Meridian Financial Group teaching dataset.';"
             )
         else:
             cells.append(
                 "-- Curated business data. Everything a Genie Agent is pointed at lives here.\n"
-                f"CREATE SCHEMA IF NOT EXISTS {layout.core}\n"
+                f"CREATE SCHEMA IF NOT EXISTS {layout.core.rstrip('.')}\n"
                 "  COMMENT 'Core banking facts and dimensions for Meridian Financial Group.';"
             )
             cells.append(
                 "-- Unstructured documents for Agent mode and Knowledge Assistant.\n"
-                f"CREATE SCHEMA IF NOT EXISTS {layout.ref}\n"
+                f"CREATE SCHEMA IF NOT EXISTS {layout.ref.rstrip('.')}\n"
                 "  COMMENT 'Reference and unstructured material: credit committee memos, "
                 "branch notes, complaint letters.';"
             )
             cells.append(
                 "-- Raw and superseded objects, kept apart from curated data.\n"
-                f"CREATE SCHEMA IF NOT EXISTS {layout.staging}\n"
+                f"CREATE SCHEMA IF NOT EXISTS {layout.staging.rstrip('.')}\n"
                 "  COMMENT 'Staging: raw and superseded objects. Not intended for reporting.';"
             )
     else:
@@ -174,7 +210,7 @@ def setup_ddl(layout: Layout) -> str:
         cells.append(
             "-- Only needed for Agent mode over files (Modules 3 and 16). If you lack\n"
             "-- CREATE VOLUME, pass create_volume=False and skip those exercises.\n"
-            f"CREATE VOLUME IF NOT EXISTS {layout.ref}.documents\n"
+            f"CREATE VOLUME IF NOT EXISTS {layout.ref}documents\n"
             "  COMMENT 'PDFs attached to the agent for Agent mode: credit committee memos, "
             "branch manager notes, customer complaint letters.';"
         )

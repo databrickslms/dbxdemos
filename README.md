@@ -102,6 +102,33 @@ name — `current_catalog()` exists by definition, so there would be nothing to 
 Passing `schema` assumes you cannot create that schema either, since that is the
 reason to reach for it. Override with `create_schema=True` if you can.
 
+### One schema shared with other content
+
+If your schema also holds other things, prefix the object names so their
+provenance is visible:
+
+```python
+academy.install('genie-agents', schema='genie_agent', table_prefix='mfg_')
+```
+
+The logical group folds into the name:
+
+| Default | With `table_prefix='mfg_'` |
+|---|---|
+| `core.dim_date` | `genie_agent.mfg_core_dim_date` |
+| `ref.documents` | `genie_agent.mfg_ref_documents` |
+| `staging.fct_txn_legacy` | `genie_agent.mfg_staging_fct_txn_legacy` |
+
+The prefix names objects, never the schema. `table_prefix` requires `schema` —
+without one, the schemas already namespace the objects and a prefix would just be
+noise.
+
+> **Worth weighing before you use it.** Genie reads table and column names as
+> context, and Module 7 of the course is partly about *removing* noise so an agent
+> has less to wade through. `mfg_core_dim_date` is measurably noisier than
+> `dim_date`. Use a prefix when the schema is genuinely shared and provenance
+> matters more; skip it when the schema is yours.
+
 ### No CREATE VOLUME either
 
 ```python
