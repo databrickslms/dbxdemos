@@ -1,7 +1,7 @@
 {
   "id": "genie-agents",
-  "title": "Genie Agents — Meridian Financial Group lab",
-  "description": "Meridian Financial Group: a synthetic US investment manager — portfolios, funds, AUM snapshots, flows, performance and holdings across 2.1M clients, 4,500 portfolios and four distribution channels, over two fiscal years. The lab dataset for the Genie Agents course.",
+  "title": "Genie Agents \u2014 Meridian Financial Group lab",
+  "description": "Meridian Financial Group: a synthetic US investment manager \u2014 portfolios, funds, AUM snapshots, flows, performance and holdings across 2.1M clients, 4,500 portfolios and four distribution channels, over two fiscal years. The lab dataset for the Genie Agents course.",
   "default_schema": "genie_agent",
   "default_table_prefix": "mfg_",
   "default_tier": "small",
@@ -24,15 +24,15 @@
       "order": 1,
       "name": "01_catalog_and_schemas",
       "sql": "01_catalog_and_schemas.sql",
-      "title": "01 · Catalog and schemas",
-      "intro": "Creates the schemas and the documents volume for the Meridian lab.\n\nThe first cell shows which catalog you are working in. Check it before running 02 — everything else lands there.",
+      "title": "01 \u00b7 Catalog and schemas",
+      "intro": "Creates the schemas and the documents volume for the Meridian lab.\n\nThe first cell shows which catalog you are working in. Check it before running 02 \u2014 everything else lands there.",
       "required": true
     },
     {
       "order": 2,
       "name": "02_dimensions",
       "sql": "02_dimensions.sql",
-      "title": "02 · Dimensions",
+      "title": "02 \u00b7 Dimensions",
       "intro": "Nine dimensions: dates, asset classes, benchmarks, portfolios, funds, advisors, clients, accounts and FX rates.\n\nEvery value derives from `hash()` of the row key rather than `rand()`, and ages anchor to a fixed date rather than today. Your data is therefore byte-identical to everyone else's, which is what lets the checks later in the course compare against a known answer.",
       "required": true
     },
@@ -40,16 +40,16 @@
       "order": 3,
       "name": "03_facts",
       "sql": "03_facts.sql",
-      "title": "03 · Facts",
-      "intro": "Three fact tables: daily AUM snapshots, client flows, and portfolio returns by period.\n\n**This is the slow one** — it generates {{TXN_COUNT}} flow events plus roughly 36M daily AUM snapshots. Expect several minutes on a small warehouse, longer if it is cold.\n\nRead the row counts it prints at the end. You will be asked about them.",
-      "slow": true,
+      "title": "03 \u00b7 Facts",
+      "intro": "Three fact tables: daily AUM snapshots, client flows, and portfolio returns by period.\n\nIt generates {{TXN_COUNT}} flow events plus roughly 35M daily AUM snapshots, and takes well under a minute on a warm serverless warehouse.\n\nRead the row counts it prints at the end. You will be asked about them.",
+      "slow": false,
       "required": true
     },
     {
       "order": 4,
       "name": "04_staging",
       "sql": "04_staging.sql",
-      "title": "04 · Staging",
+      "title": "04 \u00b7 Staging",
       "intro": "Two objects that exist in most real lakehouses and that nobody has retired: a 380-column custodian position feed, and a superseded AUM extract still sitting beside its replacement.\n\nThey are here because deciding what *not* to point an agent at is part of the job.",
       "required": false,
       "needed_for": "Modules 6, 7, 12, 13"
@@ -58,7 +58,7 @@
       "order": 5,
       "name": "05_governance",
       "sql": "05_governance.sql",
-      "title": "05 · Governance",
+      "title": "05 \u00b7 Governance",
       "intro": "A row filter on advisor coverage region, column masks over the client identifiers, and certification tags.\n\n**Needs privilege** to create functions and ALTER the tables, and the `mfg_*` account groups to exist. If you cannot run it, skip it.",
       "requires_admin": true,
       "required": false,
@@ -68,7 +68,7 @@
       "order": 6,
       "name": "06_curated",
       "sql": "06_curated.sql",
-      "title": "06 · Curated layer",
+      "title": "06 \u00b7 Curated layer",
       "intro": "The objects an agent should be pointed at: month-end AUM converted to USD with the discretionary split made explicit, settled flows with the netting spelled out, a client view without identifiers, and four Unity Catalog functions.\n\n**Attempt the curation exercise before running this.** It is the worked answer.",
       "required": false,
       "needed_for": "Modules 7, 15"
@@ -77,7 +77,7 @@
       "order": 7,
       "name": "07_metric_view",
       "sql": "07_metric_view.sql",
-      "title": "07 · Metric view",
+      "title": "07 \u00b7 Metric view",
       "intro": "One declaration of AUM, assets under advisement and net flows, with synonyms and formats, so they cannot mean different things in different places.",
       "required": false,
       "needed_for": "Modules 7, 15",
@@ -87,10 +87,9 @@
       "order": 99,
       "name": "99_validate",
       "sql": "99_validate.sql",
-      "title": "99 · Validate",
+      "title": "99 \u00b7 Validate",
       "intro": "Fourteen checks confirming the dataset is complete and behaving as expected. Every row should read PASS.\n\nRead the numbers, not just the verdicts.",
-      "required": false,
-      "needed_for": "checking your install"
+      "required": true
     }
   ]
 }
