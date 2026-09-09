@@ -125,3 +125,6 @@ This is the single most common source of "I already fixed that" confusion.
   install call, and whether `README.md` examples match.
 - `dist/` is gitignored. Always `rm -rf dist` before building; a stale wheel from a
   previous version has nearly been published once.
+
+## Content Quality Reviewer: 
+  Check all LMS content for factual, grammatical, spelling, and formatting errors. Ensure the wording is clear, simple, and easy to understand. Rewrite complicated or confusing sentences using plain language without changing the meaning. Avoid unnecessary technical jargon, ambiguity, repetition, and overly complex sentence structures. Ensure the final content is accurate, consistent, professional, and learner-friendly.
