@@ -195,7 +195,7 @@ def test_dry_run_install_needs_no_workspace():
     assert [n.order for n in result.notebooks] == [1, 2, 3, 4, 5, 6, 7, 99]
     rendered = repr(result)
     assert "Run these" in rendered
-    assert "slow" in rendered, "the facts notebook should be flagged slow"
+    assert "slow" not in rendered, "no notebook is slow at the small tier any more"
     assert "needs admin" in rendered, "governance should be flagged as needing privilege"
 
 
@@ -414,9 +414,16 @@ def test_install_shows_an_example_object_name():
 
 # ── Which notebooks are actually required ────────────────────────────────────
 
-def test_only_the_first_three_are_required():
+def test_required_notebooks_are_the_dataset_and_its_check():
+    """99_validate is required too — an unverified dataset silently breaks later
+    modules, and the checks are what catch a half-finished install."""
     required = [n.name for n in COURSE.notebooks if n.required]
-    assert required == ["01_catalog_and_schemas", "02_dimensions", "03_facts"]
+    assert required == [
+        "01_catalog_and_schemas",
+        "02_dimensions",
+        "03_facts",
+        "99_validate",
+    ]
 
 
 def test_optional_notebooks_say_what_they_are_for():
