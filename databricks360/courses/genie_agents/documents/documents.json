@@ -1,0 +1,282 @@
+[
+  {
+    "file": "memo_01_2026-07-14.pdf",
+    "kind": "Investment Committee Memo",
+    "date": "2026-07-14",
+    "title": "Emerging market equity — reduce or hold?",
+    "body": "The committee reviewed the EM equity sleeve following three consecutive quarters of net outflows. Flows in FY2026 Q3 were reported as negative $412m on the distribution pack, but that figure counted exchanges out of the EM funds into the global equity funds as redemptions. Excluding internal exchanges, true external outflow was closer to $180m. The committee asked that future packs state whether exchanges are included. Decision: hold the allocation, revisit at the October meeting."
+  },
+  {
+    "file": "memo_02_2026-06-09.pdf",
+    "kind": "Investment Committee Memo",
+    "date": "2026-06-09",
+    "title": "Held-away reporting in client statements",
+    "body": "Statements currently show a single 'total assets' line that combines managed and held-away positions. Compliance flagged that this reads as assets under management. The committee agreed to split the line into 'managed by Meridian' and 'reported, not managed', effective with the September statement run. Note this makes the client-facing figure LOWER than the number some advisors have been quoting."
+  },
+  {
+    "file": "memo_03_2026-05-12.pdf",
+    "kind": "Investment Committee Memo",
+    "date": "2026-05-12",
+    "title": "Fiscal versus calendar reporting",
+    "body": "Finance and Distribution presented different Q2 numbers. Both were correct. Finance uses the calendar quarter for regulatory filings; Distribution uses the Meridian fiscal quarter, which runs from 1 October. The committee did not change either convention but asked that every pack label which calendar it uses in the title, not the footnote."
+  },
+  {
+    "file": "memo_04_2026-04-21.pdf",
+    "kind": "Investment Committee Memo",
+    "date": "2026-04-21",
+    "title": "Discretionary versus advisory mandates",
+    "body": "The AUM figure presented to the board includes advisory-only mandates where Meridian has no investment discretion. Three committee members considered this overstated. The agreed definition going forward: headline AUM means discretionary managed assets. Advisory-only and held-away are reported separately and never summed into the headline."
+  },
+  {
+    "file": "memo_05_2026-03-17.pdf",
+    "kind": "Investment Committee Memo",
+    "date": "2026-03-17",
+    "title": "Asset class taxonomy — two hierarchies",
+    "body": "The allocation report and the regulatory filing disagree on fixed income exposure by roughly nine percentage points. The cause is the two classifications maintained in the asset class dimension: the investment classification used by portfolio managers, and the regulatory classification used for filings. A bond ETF is fixed income in one and a pooled vehicle in the other. Neither is wrong. The committee asked that reports name which they use."
+  },
+  {
+    "file": "memo_06_2026-02-10.pdf",
+    "kind": "Investment Committee Memo",
+    "date": "2026-02-10",
+    "title": "Performance reporting — which return",
+    "body": "Client reporting shows time-weighted return net of fees. The advisor portal shows money-weighted return. Clients comparing the two have raised queries. Both are correct measures of different things: time-weighted removes the effect of client cash flow timing, money-weighted includes it. The committee agreed no change, but asked that both screens label the measure."
+  },
+  {
+    "file": "memo_07_2026-01-20.pdf",
+    "kind": "Investment Committee Memo",
+    "date": "2026-01-20",
+    "title": "Currency conversion in consolidated reporting",
+    "body": "International portfolios report in EUR, GBP and JPY. The consolidated pack converts at the reporting date rate. A query was raised about using period-average rates instead. The committee retained reporting-date conversion for balance sheet figures and noted that flow figures should convert at settlement date, not trade date."
+  },
+  {
+    "file": "memo_08_2025-12-16.pdf",
+    "kind": "Investment Committee Memo",
+    "date": "2025-12-16",
+    "title": "Month-end convention",
+    "body": "Month-end figures are struck on the last business day, not the last calendar day. This is why December figures carry a 31 December label but a 30 December valuation in some years. The committee confirmed the business-day convention and asked that the label match the valuation date rather than the month."
+  },
+  {
+    "file": "memo_09_2025-11-11.pdf",
+    "kind": "Investment Committee Memo",
+    "date": "2025-11-11",
+    "title": "Legacy AUM extract retirement",
+    "body": "The legacy AUM extract remains in use by two downstream reports despite being superseded. It disagrees with the current source in ways nobody has documented. The committee approved retirement by the end of Q3, and asked that it be marked deprecated in the catalogue immediately so no new work builds on it."
+  },
+  {
+    "file": "memo_10_2025-10-14.pdf",
+    "kind": "Investment Committee Memo",
+    "date": "2025-10-14",
+    "title": "Net new money definition",
+    "body": "Distribution reports 'net new money'. Finance reports 'net flows'. They are the same measure computed two ways: Distribution excludes internal exchanges, Finance historically did not. The two figures differed by $1.2bn last year. Agreed: exchanges are excluded from both. Finance to restate the prior year comparative."
+  },
+  {
+    "file": "note_01_2026-08-03.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-08-03",
+    "title": "Hartmann relationship review",
+    "body": "Met the Hartmanns to review the family's holdings. They think of themselves as one relationship; our systems hold three separate client records and eleven accounts. When they ask what Meridian manages for them, no single number in our reporting answers that. Raised with operations. For now I total the accounts by hand before every meeting."
+  },
+  {
+    "file": "note_02_2026-07-28.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-07-28",
+    "title": "West coast prospect — reporting expectations",
+    "body": "Prospect asked for AUM broken down by state. We report by coverage region, and the regions are four broad bands. State is available on the advisor record but not exposed in most reporting. Flagged to the analytics team."
+  },
+  {
+    "file": "note_03_2026-07-15.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-07-15",
+    "title": "Client query on quarterly return",
+    "body": "Client compared the return on their statement with the figure in the portal and found a gap of about 140 basis points. Explained the difference between time-weighted and money-weighted. They had made a large contribution in February, which is the whole gap. Suggested we label both screens."
+  },
+  {
+    "file": "note_04_2026-06-30.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-06-30",
+    "title": "Advisory mandate reclassification",
+    "body": "Two accounts moved from discretionary to advisory this quarter at the client's request. Our AUM figure for the region dropped by $84m as a result, which looks like an outflow on the flow report and is not one. Asked whether mandate changes can be excluded from flows."
+  },
+  {
+    "file": "note_05_2026-06-11.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-06-11",
+    "title": "Held-away assets in the review pack",
+    "body": "Client sees the held-away line and asks why we report on assets we do not manage. Explained we can see them through the aggregation feed but have no discretion. They asked which number our fee is based on. Managed only — confirmed with billing."
+  },
+  {
+    "file": "note_06_2026-05-22.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-05-22",
+    "title": "Exchange between funds read as a redemption",
+    "body": "Client moved $2.4m from the US equity fund into the global equity fund. Appeared on the monthly report as a redemption and a subscription. Client asked whether we had sold their position and repurchased it. Explained it is an internal exchange. This causes confusion every time it happens."
+  },
+  {
+    "file": "note_07_2026-04-30.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-04-30",
+    "title": "Settlement timing at quarter end",
+    "body": "A $6m subscription instructed on 30 June settled on 2 July. It appears in Q4 on the flow report and in Q3 on the client's own records. Both are defensible; we report on settlement date. Client has been told."
+  },
+  {
+    "file": "note_08_2026-04-08.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-04-08",
+    "title": "Cash allocation question",
+    "body": "Client asked what proportion is in cash. Our asset class code for cash is a money market code, and the word cash does not appear in the reporting. Had to look it up. Worth adding as a synonym wherever these reports are generated."
+  },
+  {
+    "file": "note_09_2026-03-19.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-03-19",
+    "title": "Benchmark comparison misread",
+    "body": "The performance page shows the portfolio return and the benchmark return side by side. A client read the benchmark column as their own return and was pleased about a number that was not theirs. Suggest the columns be labelled more distinctly."
+  },
+  {
+    "file": "note_10_2026-02-25.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-02-25",
+    "title": "Tenure banding query",
+    "body": "Client asked to be treated as long-tenured for fee purposes. Our banding puts them at fifty-eight months, two months short of the five-year band. Explained the band boundary. No discretion available at the advisor level."
+  },
+  {
+    "file": "complaint_01_2026-08-19.pdf",
+    "kind": "Client Complaint Resolution",
+    "date": "2026-08-19",
+    "title": "Inconsistent AUM figures between statement and portal",
+    "body": "The client states that their quarterly statement shows a total of $4.18m while the online portal shows $4.61m for the same date. Investigation: the portal total includes held-away assets aggregated from an external custodian; the statement shows managed assets only. Both figures are correct for what they measure. Resolution: the portal will label the held-away component separately from the September release. The client has been written to."
+  },
+  {
+    "file": "complaint_02_2026-07-31.pdf",
+    "kind": "Client Complaint Resolution",
+    "date": "2026-07-31",
+    "title": "Reported return does not match own calculation",
+    "body": "The client calculated their return by dividing closing value by opening value and found a materially different number from the statement. Investigation: the client made two contributions during the period. The statement reports time-weighted return, which removes the effect of contribution timing. The client's own calculation is closer to a money-weighted return. No error. Resolution: explanatory note added to the statement glossary."
+  },
+  {
+    "file": "complaint_03_2026-07-02.pdf",
+    "kind": "Client Complaint Resolution",
+    "date": "2026-07-02",
+    "title": "Quarter-end valuation date query",
+    "body": "The client questions why the quarter-end statement is dated 30 June but values positions at 28 June. Investigation: 30 June fell on a Sunday; valuations are struck on the last business day. No error. Resolution: the statement will carry the valuation date rather than the calendar quarter end."
+  },
+  {
+    "file": "complaint_04_2026-06-14.pdf",
+    "kind": "Client Complaint Resolution",
+    "date": "2026-06-14",
+    "title": "Fee charged on assets not managed",
+    "body": "The client believes fees were charged on their held-away holdings. Investigation: fees are calculated on managed assets only. The fee schedule references 'total relationship assets', which is misleading wording. No overcharge occurred. Resolution: fee schedule wording to be amended at the next revision."
+  },
+  {
+    "file": "complaint_05_2026-05-28.pdf",
+    "kind": "Client Complaint Resolution",
+    "date": "2026-05-28",
+    "title": "Sale reported that the client did not instruct",
+    "body": "The client's report shows a redemption of $2.4m in the US equity fund. Investigation: this was an exchange into the global equity fund, instructed by the client, presented as a redemption and a matching subscription. No unauthorised transaction. Resolution: exchange transactions will be labelled as exchanges rather than split into two lines."
+  },
+  {
+    "file": "complaint_06_2026-05-06.pdf",
+    "kind": "Client Complaint Resolution",
+    "date": "2026-05-06",
+    "title": "Fixed income allocation differs between documents",
+    "body": "The client received an allocation summary showing 31% fixed income and a regulatory document showing 22%. Investigation: the two documents use different asset class hierarchies. The difference is entirely the classification of pooled bond vehicles. Both are accurate under their own taxonomy. Resolution: the allocation summary will state which classification it uses."
+  },
+  {
+    "file": "complaint_07_2026-04-17.pdf",
+    "kind": "Client Complaint Resolution",
+    "date": "2026-04-17",
+    "title": "Currency conversion in the consolidated statement",
+    "body": "The client with EUR and USD accounts believes the consolidated total is understated. Investigation: conversion is applied at the reporting date rate. The client had compared against a mid-month rate. No error. Resolution: the conversion date will be stated on the statement."
+  },
+  {
+    "file": "complaint_08_2026-03-25.pdf",
+    "kind": "Client Complaint Resolution",
+    "date": "2026-03-25",
+    "title": "Missing transactions in the March report",
+    "body": "Three instructions placed in late March do not appear on the March report. Investigation: all three settled in April. Flow reporting is on settlement date. No transactions are missing. Resolution: the report footer will state that flows are reported on settlement date."
+  },
+  {
+    "file": "complaint_09_2026-02-18.pdf",
+    "kind": "Client Complaint Resolution",
+    "date": "2026-02-18",
+    "title": "Account count on the relationship summary",
+    "body": "The client states they hold fourteen accounts; the summary shows eleven. Investigation: three are held under a related family member's client record. Our systems have no household grouping. Not an error, but the summary cannot show what the client considers their relationship. Resolution: referred to product for a household concept."
+  },
+  {
+    "file": "complaint_10_2026-01-09.pdf",
+    "kind": "Client Complaint Resolution",
+    "date": "2026-01-09",
+    "title": "Prior year comparative restated without notice",
+    "body": "The client noticed the prior year net flow comparative changed between two statements. Investigation: the prior year was restated to exclude internal exchanges, following the October committee decision. The restatement is correct and was not communicated. Resolution: restatement note added; apology issued."
+  },
+  {
+    "file": "note_11_2026-08-11.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-08-11",
+    "title": "Region naming in client conversations",
+    "body": "Clients and advisors say Northeast, Midwest and the West Coast. Our data holds two-letter region codes, and the state field holds two-letter state codes. Every reporting request has to be translated by hand before it can be run, and twice this quarter a request for California came back empty because the filter was written with the full state name. Nobody questioned the empty result the first time; it was assumed there were no California accounts in the segment. Worth fixing wherever these requests are served from."
+  },
+  {
+    "file": "note_12_2026-08-05.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-08-05",
+    "title": "Snapshot data misread by a new analyst",
+    "body": "A new analyst produced a monthly AUM figure by summing the daily valuation table across the month. The result was roughly thirty times the real book, because the table carries the full balance on every day rather than a movement. It was caught before it left the team, but only because the number was absurd. A weekly total would have been about seven times too large and might well have gone out. The table needs a warning on it, not a note in a handbook."
+  },
+  {
+    "file": "note_13_2026-07-22.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-07-22",
+    "title": "Pending instructions in the flow report",
+    "body": "The weekly flow report includes instructions that have not settled and, in two cases this month, were later cancelled. The Monday figure and the Friday figure for the same week therefore disagree, and the difference is not explained anywhere on the report. Asked whether the report can filter to settled instructions only, with pending shown separately if anyone wants it. Distribution have said they want both but labelled."
+  },
+  {
+    "file": "note_14_2026-07-09.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-07-09",
+    "title": "Which AUM for the pitch deck",
+    "body": "Preparing a pitch and found three AUM figures in circulation for the same date: discretionary only, all managed including advisory mandates, and managed plus held-away. The spread between the lowest and highest is about eleven percent, which is more than the growth we were planning to claim. Used discretionary and said so on the slide. This needs settling once rather than by whoever builds the deck."
+  },
+  {
+    "file": "note_15_2026-06-24.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-06-24",
+    "title": "Client data in a shared spreadsheet",
+    "body": "A client list circulated internally included dates of birth and partial identifiers, pulled from the raw client table rather than the masked view. Removed and reissued from the safe view within the hour. No external exposure. The underlying problem is that the raw table is still the obvious thing to query, and the safe view is not obviously there. Reminder issued, but a reminder is not a control."
+  },
+  {
+    "file": "note_16_2026-06-03.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-06-03",
+    "title": "Advisory assets in the regional total",
+    "body": "The regional AUM total includes advisory-only mandates where we hold no discretion. The regional lead reports on discretionary. The two numbers differ by about seven percent, both get quoted in the same meeting, and neither is labelled. Asked for the regional pack to show discretionary as the headline with advisory as a separate line beneath it."
+  },
+  {
+    "file": "note_17_2026-05-14.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-05-14",
+    "title": "Equity sub-classes in client questions",
+    "body": "Clients say equities. Our codes split US, international and emerging market equity into three separate classes. A request for equity exposure that matches only the US code understates the position by roughly a third for a typical balanced mandate. This has happened twice that I know of. Whatever serves these questions needs to know that equities means all three."
+  },
+  {
+    "file": "note_18_2026-04-02.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-04-02",
+    "title": "Trade date versus settlement date at month end",
+    "body": "A large redemption instructed on 29 April settled on 1 May and therefore appears in May flows. The client's adviser expected it in April and queried the monthly report. Both dates are on the record and either is defensible, but the report uses settlement date without saying so anywhere. At quarter ends this moves material amounts between periods."
+  },
+  {
+    "file": "note_19_2026-03-06.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-03-06",
+    "title": "Benchmark return column",
+    "body": "Second time this quarter a colleague has quoted the benchmark return as the portfolio return in a client email. The two columns sit next to each other on the performance screen with similar headings, and the benchmark number was the higher one on both occasions. Corrected before sending in one case and after in the other. The columns need distinguishing."
+  },
+  {
+    "file": "note_20_2026-02-05.pdf",
+    "kind": "Advisor Call Note",
+    "date": "2026-02-05",
+    "title": "Average account value question",
+    "body": "Asked for the average account value for the Affluent segment. Two figures came back depending on whether the denominator was accounts or distinct clients, and the gap was about eighteen percent because many clients hold several accounts. Neither report stated which denominator it used. Went with accounts, and said so, but the next person will have to ask again."
+  }
+]

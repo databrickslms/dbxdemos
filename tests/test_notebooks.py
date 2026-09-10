@@ -800,3 +800,31 @@ def test_certification_uses_the_system_tag():
                     f"{nb.sql}: '{key}' is a custom tag. Use "
                     f"'system.certification_status' = '{key}'"
                 )
+
+
+def test_document_corpus_is_complete_and_grounded():
+    """Module 3's Agent-mode exercises need documents that disagree with the tables
+    in useful ways. Forty files that all say the same thing would teach nothing."""
+    import json
+    from importlib import resources
+
+    raw = (resources.files(COURSE.package) / "documents" / "documents.json").read_text("utf-8")
+    docs = json.loads(raw)
+    assert len(docs) == 40, f"expected 40 documents, found {len(docs)}"
+
+    kinds = {}
+    for d in docs:
+        for key in ("file", "kind", "date", "title", "body"):
+            assert d.get(key), f"{d.get('file')}: missing {key}"
+        assert len(d["body"]) > 200, f"{d['file']}: too short to be worth reading"
+        kinds[d["kind"]] = kinds.get(d["kind"], 0) + 1
+    assert len(kinds) >= 3, f"only {len(kinds)} document kinds"
+
+    assert len({d["file"] for d in docs}) == 40, "duplicate filenames"
+
+    # Each planted flaw should be discussed by at least one document, or the
+    # Agent-mode questions have nothing to reconcile against the tables.
+    corpus = " ".join(d["body"].lower() for d in docs)
+    for flaw in ["held-away", "exchange", "fiscal", "discretionary", "business day",
+                 "time-weighted", "settlement date", "classification"]:
+        assert flaw in corpus, f"no document mentions {flaw!r}"

@@ -58,6 +58,20 @@ Installed 'genie-agents' → /Workspace/Users/you@corp.com/databricks360/genie-a
     3. 03_facts
 ```
 
+## Documents
+
+Module 3's Agent-mode exercises read unstructured files alongside the tables:
+
+```python
+academy.create_documents('genie-agents')
+```
+
+Forty Meridian documents — investment committee memos, advisor call notes and
+client complaint resolutions — written into the course's Unity Catalog volume.
+Each restates a planted flaw in the words someone would use in a meeting, so
+answering a question means reconciling prose against numbers rather than reading
+one or the other. PDFs where `fpdf` is installed, plain text otherwise.
+
 ## Genie Agents
 
 Courses that need Genie Agents ship them as `serialized_space` definitions, so an

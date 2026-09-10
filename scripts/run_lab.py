@@ -58,6 +58,7 @@ def main() -> None:
     ap.add_argument("--table-prefix")
     ap.add_argument("--tier", default="small")
     ap.add_argument("--warehouse-id")
+    ap.add_argument("--bare", action="store_true")
     ap.add_argument("--stop-on-error", action="store_true")
     args = ap.parse_args()
 
@@ -72,8 +73,14 @@ def main() -> None:
     w = WorkspaceClient()
 
     warehouse = args.warehouse_id or next(iter(w.warehouses.list())).id
-    schema = args.schema or course.default_schema
-    prefix = args.table_prefix or course.default_table_prefix
+    # --bare selects the multi-schema layout (core / ref / staging, no prefix),
+    # which is what a governed workspace normally gets. Without it the course's
+    # own single-schema naming applies, and that is the only shape ever tested.
+    if args.bare:
+        schema, prefix = None, None
+    else:
+        schema = args.schema or course.default_schema
+        prefix = args.table_prefix or course.default_table_prefix
     layout = resolve(catalog=args.catalog, schema=schema, table_prefix=prefix,
                      create_catalog=False, create_schema=None, create_volume=False)
     values = {
