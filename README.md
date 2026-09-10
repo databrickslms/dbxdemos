@@ -58,6 +58,30 @@ Installed 'genie-agents' → /Workspace/Users/you@corp.com/databricks360/genie-a
     3. 03_facts
 ```
 
+## Cleaning up
+
+When a cohort finishes, remove what the course installed:
+
+```python
+academy.cleanup('genie-agents')                # show what would go
+academy.cleanup('genie-agents', confirm=True)  # remove it
+```
+
+Dry run by default, and `confirm` is keyword-only so it cannot be passed by
+accident. It removes the schema and its objects, the documents volume, the Genie
+Agents and the notebooks — and only what the course created. An agent you renamed,
+or a table someone else left in the lab schema, is reported and left alone.
+
+Notebook `100_cleanup` does the same thing, with the destructive call commented
+out so that running every cell top to bottom does not delete your lab.
+
+If you installed with non-default arguments, pass the same ones back:
+
+```python
+academy.cleanup('genie-agents', catalog='training', confirm=True)
+academy.cleanup('genie-agents', schema='large_tier', title_suffix='(large tier)', confirm=True)
+```
+
 ## Documents
 
 Module 3's Agent-mode exercises read unstructured files alongside the tables:

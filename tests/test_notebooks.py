@@ -193,7 +193,7 @@ def test_dry_run_install_needs_no_workspace():
     result = install("genie-agents", dry_run=True, catalog="mfg", tier="small")
     assert result.catalog == "mfg"
     assert len(result.notebooks) == len(COURSE.notebooks)
-    assert [n.order for n in result.notebooks] == [1, 2, 3, 4, 5, 6, 7, 8, 99]
+    assert [n.order for n in result.notebooks] == [1, 2, 3, 4, 5, 6, 7, 8, 99, 100]
     rendered = repr(result)
     assert "Run these" in rendered
     assert "slow" not in rendered, "no notebook is slow at the small tier any more"
@@ -914,3 +914,38 @@ def test_both_entry_points_share_one_catalog_resolver():
         assert "for c in w.catalogs.list()" not in src, (
             f"{mod.__name__} has its own copy of the resolver"
         )
+
+
+def test_cleanup_is_a_dry_run_by_default():
+    """It drops schemas. A signature that deletes unless told otherwise is the
+    wrong default for that."""
+    import inspect
+    from databricks360 import cleanup
+
+    sig = inspect.signature(cleanup)
+    assert sig.parameters["confirm"].default is False, "confirm must default to False"
+    assert sig.parameters["confirm"].kind is inspect.Parameter.KEYWORD_ONLY, (
+        "confirm must be keyword-only, so it cannot be passed by accident"
+    )
+
+
+def test_the_cleanup_notebook_does_not_confirm_for_you():
+    """The notebook must show the dry run and leave the destructive call commented
+    out. A learner running every cell top to bottom should not lose their lab."""
+    from databricks360._catalog import read_sql
+
+    src = read_sql(COURSE, "100_cleanup.py")
+    live = [l for l in src.splitlines()
+            if "confirm=True" in l and not l.strip().startswith("#")]
+    assert not live, f"the cleanup notebook confirms without asking: {live}"
+    assert 'academy.cleanup("genie-agents")' in src, "no dry run in the cleanup notebook"
+
+
+def test_cleanup_covers_everything_the_course_installs():
+    """Anything the course creates and cleanup forgets is left in the workspace."""
+    import inspect
+    from databricks360 import _cleanup
+
+    src = inspect.getsource(_cleanup)
+    for thing in ("genie/spaces", "DROP SCHEMA", "volume_path", "workspace.delete"):
+        assert thing in src, f"cleanup never removes {thing}"

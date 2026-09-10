@@ -101,6 +101,16 @@
       "title": "99 · Validate",
       "intro": "Fourteen checks confirming the dataset is complete and behaving as expected. Every row should read PASS.\n\nRead the numbers, not just the verdicts.",
       "required": true
+    },
+    {
+      "order": 100,
+      "name": "100_cleanup",
+      "sql": "100_cleanup.py",
+      "language": "python",
+      "title": "100 · Clean up",
+      "intro": "Removes everything the course installed: the schema and its objects, the documents volume, the Genie Agents, and these notebooks.\n\n**This drops a schema.** It runs as a dry run first and does nothing until you pass confirm=True. It removes only what the course created — an agent you renamed, or a table someone else put in the lab schema, is reported and left alone.",
+      "required": false,
+      "needed_for": "after the course"
     }
   ]
 }
