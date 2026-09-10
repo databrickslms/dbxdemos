@@ -1,0 +1,30 @@
+{
+  "title": "The Knowledge Store",
+  "minutes": 40,
+  "graded": true,
+  "agent_title": "Wealth & Distribution",
+  "brief": [
+    "Teach the agent your business language. On the Wealth & Distribution agent:",
+    "",
+    "  - Add synonyms for 10 business terms. Start with AUM, AUA, net new money, equities, cash.",
+    "  - Author 8 SQL expressions: 3 filters, 4 measures, 1 field.",
+    "  - Declare the join relationships rather than leaving Genie to guess them.",
+    "",
+    "Then re-run the questions that failed in Lab 4 and show which now pass.",
+    "",
+    "Remember the ceiling: 200 knowledge store snippets per agent, shared between table",
+    "descriptions, join relationships and SQL expressions."
+  ],
+  "checks": [
+    {"kind": "agent", "name": "The agent exists", "count": "data_sources.tables", "at_least": 1},
+    {"kind": "agent", "name": "8 or more SQL expressions", "count": "instructions.sql_snippets",
+     "at_least": 8, "hint": "Filters, measures and fields all count. A measure defined once cannot drift."},
+    {"kind": "agent", "name": "At least 3 filters", "count": "instructions.sql_snippets.filters",
+     "at_least": 3, "hint": "Settled only, exclude exchanges, discretionary only."},
+    {"kind": "agent", "name": "At least 4 measures", "count": "instructions.sql_snippets.measures",
+     "at_least": 4, "hint": "AUM, AUA, held-away and net flows are the four that get argued about."},
+    {"kind": "agent", "name": "10 or more synonyms across the SQL snippets",
+     "count": "instructions.sql_snippets.measures#synonyms", "at_least": 10, "required": false,
+     "hint": "Users say 'net new money', not 'sum of signed flow amounts'."}
+  ]
+}

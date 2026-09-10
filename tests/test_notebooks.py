@@ -660,3 +660,65 @@ def test_no_sql_hardcodes_an_unprefixed_table_name():
             raise AssertionError(
                 f"{nb.sql}: table_name = '{m.group(1)}' misses a prefixed layout — use LIKE '%{m.group(1)}'"
             )
+
+
+# ── Labs ─────────────────────────────────────────────────────────────────────
+
+def test_lab_specs_are_well_formed():
+    """A lab spec is data, so nothing type-checks it. A malformed one fails at
+    grading time, in front of a learner."""
+    import json
+    from importlib import resources
+
+    folder = resources.files(COURSE.package) / "labs"
+    specs = sorted(p.name for p in folder.iterdir() if p.name.endswith(".json"))
+    assert specs, "the course ships no labs"
+
+    for name in specs:
+        spec = json.loads((folder / name).read_text(encoding="utf-8"))
+        for key in ("title", "brief", "checks"):
+            assert key in spec, f"{name}: missing {key!r}"
+        assert spec["checks"], f"{name}: no checks, so GRADED would mean nothing"
+        for check in spec["checks"]:
+            assert "name" in check, f"{name}: a check with no name"
+            if check.get("kind") == "agent":
+                assert "count" in check, f"{name}: agent check {check['name']!r} needs a count path"
+                assert spec.get("agent_title"), f"{name}: agent checks need agent_title"
+            else:
+                assert "sql" in check, f"{name}: check {check['name']!r} needs sql"
+                assert isinstance(check["sql"], list), f"{name}: sql must be a list of lines"
+
+
+def test_lab_sql_uses_the_placeholders_not_hardcoded_names():
+    """A check that hardcodes a schema grades one workspace and no other."""
+    import json
+    from importlib import resources
+
+    folder = resources.files(COURSE.package) / "labs"
+    for p in folder.iterdir():
+        if not p.name.endswith(".json"):
+            continue
+        spec = json.loads(p.read_text(encoding="utf-8"))
+        for check in spec["checks"]:
+            sql = "\n".join(check.get("sql", []))
+            assert "genie_agent" not in sql, f"{p.name}: {check['name']!r} hardcodes a schema"
+            assert "workspace." not in sql, f"{p.name}: {check['name']!r} hardcodes a catalog"
+            if "{{YOU_INFO}}" in sql:
+                assert "{{YOU_SCHEMA}}" in sql, (
+                    f"{p.name}: {check['name']!r} reads information_schema without "
+                    f"filtering to the learner's schema")
+
+
+def test_every_graded_lab_has_a_spec():
+    """A lab marked GRADED in the course text but with no spec cannot be graded."""
+    import json
+    from importlib import resources
+
+    folder = resources.files(COURSE.package) / "labs"
+    have = {int(p.name[4:6]) for p in folder.iterdir() if p.name.endswith(".json")}
+    for n in have:
+        spec = json.loads((folder / f"lab_{n:02d}.json").read_text(encoding="utf-8"))
+        if spec.get("graded"):
+            assert len(spec["checks"]) >= 3, (
+                f"lab {n} is graded but has {len(spec['checks'])} checks — too few to be a grade"
+            )

@@ -25,18 +25,23 @@ from __future__ import annotations
 from ._agents import AgentRun, CreatedAgent, create_agents
 from ._catalog import Course, available_courses, get_course
 from ._install import Installation, build_notebook_source, install
+from ._labs import CheckResult, LabResult, check_lab, lab
 from ._layout import Layout, resolve as resolve_layout
 
-__version__ = "0.8.3"
+__version__ = "0.9.0"
 __all__ = [
     "install",
     "create_agents",
+    "lab",
+    "check_lab",
     "list_courses",
     "get_course",
     "available_courses",
     "build_notebook_source",
     "AgentRun",
+    "CheckResult",
     "Course",
+    "LabResult",
     "CreatedAgent",
     "Installation",
     "Layout",

@@ -1,0 +1,123 @@
+{
+  "title": "Prepare the Data",
+  "minutes": 30,
+  "graded": true,
+  "brief": [
+    "You have the 14 base MFG objects. Cut them down to something an agent can answer from.",
+    "",
+    "Build these in your own schema:",
+    "  vw_aum_reporting  — month-end AUM per account in USD, discretionary split explicit,",
+    "                      held-away separated, one row per account per reporting date.",
+    "  vw_net_flows      — settled flows only, in USD, with exchanges kept out of sales",
+    "                      and redemptions, on settlement date.",
+    "  dim_client_safe   — client attributes with every direct identifier removed.",
+    "",
+    "Then: keep your schema to 8 objects or fewer, write column comments on at least 10",
+    "columns, and make sure none of the four PII columns is reachable from what you expose.",
+    "",
+    "The numbers are checked against the reference, so a view that runs but sums a daily",
+    "snapshot will fail. That is the point of the lab."
+  ],
+  "checks": [
+    {
+      "name": "Your schema holds 8 objects or fewer",
+      "sql": [
+        "SELECT count(*) <= 8 AS ok, concat(count(*), ' objects') AS detail",
+        "FROM {{YOU_INFO}}.tables WHERE table_schema = {{YOU_SCHEMA}}"
+      ],
+      "hint": "Genie reads every object as context. Drop what nobody asks about."
+    },
+    {
+      "name": "vw_aum_reporting exists and is one row per account per reporting date",
+      "sql": [
+        "SELECT count(*) = 0 AS ok, concat(count(*), ' duplicated account/date pairs') AS detail",
+        "FROM (SELECT account_id, as_of_date FROM {{YOU}}vw_aum_reporting",
+        "      GROUP BY account_id, as_of_date HAVING count(*) > 1)"
+      ],
+      "hint": "Grain first. If a join fans out, every total downstream is wrong."
+    },
+    {
+      "name": "vw_aum_reporting carries only month-end reporting dates",
+      "sql": [
+        "SELECT count(*) = 0 AS ok, concat(count(*), ' non-reporting dates present') AS detail",
+        "FROM {{YOU}}vw_aum_reporting v",
+        "LEFT JOIN {{CORE}}dim_date d ON d.date_key = v.as_of_date AND d.is_reporting_date",
+        "WHERE d.date_key IS NULL"
+      ],
+      "hint": "A daily snapshot summed across dates multiplies the book. Filter to reporting dates."
+    },
+    {
+      "name": "AUM ties to the reference at the latest reporting date",
+      "sql": [
+        "WITH d AS (SELECT max(date_key) rd FROM {{CORE}}dim_date WHERE is_reporting_date),",
+        "yours AS (SELECT cast(sum(managed_value_usd) AS DECIMAL(20,0)) v",
+        "          FROM {{YOU}}vw_aum_reporting WHERE as_of_date = (SELECT rd FROM d)),",
+        "ref AS (SELECT cast(sum(managed_value_usd) AS DECIMAL(20,0)) v",
+        "        FROM {{CORE}}vw_aum_reporting WHERE as_of_date = (SELECT rd FROM d))",
+        "SELECT yours.v = ref.v AS ok, concat('yours ', yours.v, ' vs reference ', ref.v) AS detail",
+        "FROM yours, ref"
+      ],
+      "hint": "Convert with dim_fx_rate at the snapshot date, and exclude held-away from managed value."
+    },
+    {
+      "name": "Held-away assets are separated from managed value",
+      "sql": [
+        "SELECT count(*) > 0 AS ok, 'held_away column present' AS detail",
+        "FROM {{YOU_INFO}}.columns",
+        "WHERE table_schema = {{YOU_SCHEMA}} AND table_name = 'vw_aum_reporting'",
+        "  AND column_name LIKE '%held_away%'"
+      ],
+      "hint": "Held-away is reported on, not managed. It belongs in AUA, in its own column."
+    },
+    {
+      "name": "vw_net_flows excludes unsettled and cancelled instructions",
+      "sql": [
+        "SELECT count(*) = 0 AS ok, concat(count(*), ' unsettled rows leaked in') AS detail",
+        "FROM {{YOU}}vw_net_flows n",
+        "JOIN {{CORE}}fct_flows f ON f.flow_id = n.flow_id",
+        "WHERE f.status <> 'SETTLED'"
+      ],
+      "hint": "Pending may not happen and cancelled did not. Filter to SETTLED."
+    },
+    {
+      "name": "Net flows tie to the reference, with exchanges netting out",
+      "sql": [
+        "WITH yours AS (SELECT cast(sum(amount_usd * external_sign) AS DECIMAL(20,0)) v FROM {{YOU}}vw_net_flows),",
+        "ref AS (SELECT cast(sum(amount_usd * external_sign) AS DECIMAL(20,0)) v FROM {{CORE}}vw_net_flows)",
+        "SELECT yours.v = ref.v AS ok, concat('yours ', yours.v, ' vs reference ', ref.v) AS detail",
+        "FROM yours, ref"
+      ],
+      "hint": "EXCHANGE_IN and EXCHANGE_OUT move money inside Meridian. They are neither a sale nor a redemption."
+    },
+    {
+      "name": "No PII is reachable from anything you expose",
+      "sql": [
+        "SELECT count(*) = 0 AS ok, concat(count(*), ' identifier columns exposed: ',",
+        "       coalesce(array_join(collect_list(column_name), ', '), '')) AS detail",
+        "FROM {{YOU_INFO}}.columns",
+        "WHERE table_schema = {{YOU_SCHEMA}}",
+        "  AND lower(column_name) IN ('ssn_last4', 'email', 'dob', 'annual_income')"
+      ],
+      "hint": "dim_client carries the identifiers. Expose a safe view instead of the table."
+    },
+    {
+      "name": "At least 10 columns are documented",
+      "sql": [
+        "SELECT count(*) >= 10 AS ok, concat(count(*), ' documented columns') AS detail",
+        "FROM {{YOU_INFO}}.columns",
+        "WHERE table_schema = {{YOU_SCHEMA}}",
+        "  AND comment IS NOT NULL AND length(trim(comment)) > 20"
+      ],
+      "hint": "Genie reads column comments as context. 'the market value' teaches it nothing."
+    },
+    {
+      "name": "The 380-column custodian feed is not exposed",
+      "sql": [
+        "SELECT count(*) = 0 AS ok, 'holdings feed kept out' AS detail",
+        "FROM {{YOU_INFO}}.tables",
+        "WHERE table_schema = {{YOU_SCHEMA}} AND table_name LIKE '%holdings_raw%'"
+      ],
+      "hint": "Every column is context Genie must read before it can write SQL."
+    }
+  ]
+}

@@ -3,15 +3,21 @@
   "config": {
     "sample_questions": [
       {
+        "id": "28a0b885fef8253e68e5252c270fd111",
+        "question": [
+          "What were the largest redemptions last quarter?"
+        ]
+      },
+      {
         "id": "399d60f6de3143f3f949cecf2559a1f2",
         "question": [
           "What was our AUM in California at the end of last year?"
         ]
       },
       {
-        "id": "f938d0a436425743b9b03176201422a6",
+        "id": "b93ad95ac3bd4cca38f77feb63ad59e9",
         "question": [
-          "What were net flows by fiscal quarter?"
+          "Which client segments hold the most assets?"
         ]
       },
       {
@@ -21,9 +27,9 @@
         ]
       },
       {
-        "id": "b93ad95ac3bd4cca38f77feb63ad59e9",
+        "id": "f938d0a436425743b9b03176201422a6",
         "question": [
-          "Which client segments hold the most assets?"
+          "What were net flows by fiscal quarter?"
         ]
       }
     ]

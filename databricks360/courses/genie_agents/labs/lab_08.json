@@ -1,0 +1,30 @@
+{
+  "title": "Create Your First Genie Agent",
+  "minutes": 35,
+  "graded": true,
+  "agent_title": "Wealth & Distribution",
+  "brief": [
+    "Build the Meridian Wealth & Distribution agent for real, on the objects you kept in Lab 7.",
+    "",
+    "  - Point it at 8 objects or fewer. Fewer is better; the docs advise five.",
+    "  - Review the AI-suggested descriptions and reject the wrong ones. At least two are",
+    "    wrong: one about what AUM means, one about the asset-class hierarchies.",
+    "  - Write instructions, but keep them short. Anything you can settle in the data or in",
+    "    a SQL expression does not belong in prose.",
+    "  - Add 5 starter questions your audience would actually ask.",
+    "  - Confirm all 5 return correct answers before you call it done.",
+    "",
+    "Name the agent so it contains 'Wealth & Distribution'."
+  ],
+  "checks": [
+    {"kind": "agent", "name": "The agent exists", "count": "data_sources.tables", "at_least": 1,
+     "hint": "Create it in the Genie UI, or with academy.create_agents()."},
+    {"kind": "agent", "name": "It carries 5 starter questions", "count": "config.sample_questions",
+     "at_least": 5, "hint": "Starter questions are how a new user learns what the agent is for."},
+    {"kind": "agent", "name": "It has instructions", "count": "instructions.text_instructions",
+     "at_least": 1, "hint": "Say what the agent is for and what it excludes."},
+    {"kind": "agent", "name": "It has at least one example query",
+     "count": "instructions.example_question_sqls", "at_least": 1,
+     "hint": "One worked example teaches Genie more than a paragraph of prose."}
+  ]
+}
