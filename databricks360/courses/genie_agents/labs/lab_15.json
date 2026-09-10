@@ -1,0 +1,21 @@
+{
+  "title": "Cost, Budgets and Scaling to Many Domains",
+  "minutes": 25,
+  "graded": false,
+  "brief": [
+    "Design an agent portfolio for an asset manager, or for your own firm's shape:",
+    "4-6 agents with audience, objects and owner, the shared metric-view foundation",
+    "underneath them, and a budget plan with thresholds and blocking decisions.",
+    "",
+    "Name at least one metric that must be defined once and shared. Then say which agent",
+    "would do the most damage by redefining it locally, and what that damage looks like",
+    "when it reaches a client report."
+  ],
+  "checks": [],
+  "review": [
+    "Every agent has one audience and one topic, not a department's whole remit.",
+    "At least one metric is identified as shared, with a named owner.",
+    "The budget blocks service principals before it blocks people.",
+    "The plan says what happens at the threshold, not just what the threshold is."
+  ]
+}

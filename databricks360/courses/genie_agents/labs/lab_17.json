@@ -1,0 +1,34 @@
+{
+  "title": "Capstone: Ship a Business-Ready Agent",
+  "minutes": 120,
+  "graded": true,
+  "agent_title": "Wealth & Distribution",
+  "brief": [
+    "Ship one agent you would put in front of a business team, and defend it.",
+    "",
+    "This re-checks the work from Labs 7 through 11 in one pass: curated objects, a",
+    "configured agent, a knowledge store, example queries and instructions, and a benchmark",
+    "with ground truth. Run check_lab for each of those first; this one is the assembly.",
+    "",
+    "Then write the handover: who owns it, what it does not answer, what breaks it, and",
+    "how someone would know it had started being wrong."
+  ],
+  "checks": [
+    {"kind": "agent", "name": "The agent exists and is narrow", "count": "data_sources.tables", "at_least": 1},
+    {"kind": "agent", "name": "Starter questions are set", "count": "config.sample_questions", "at_least": 5},
+    {"kind": "agent", "name": "Knowledge store has SQL expressions",
+     "count": "instructions.sql_snippets", "at_least": 8,
+     "hint": "Lab 9's work carries into the capstone."},
+    {"kind": "agent", "name": "Example queries are present",
+     "count": "instructions.example_question_sqls", "at_least": 10,
+     "hint": "Lab 10's work carries into the capstone."},
+    {"kind": "agent", "name": "A benchmark exists with ground truth",
+     "count": "benchmarks.questions", "at_least": 30,
+     "hint": "Lab 11's work carries into the capstone."}
+  ],
+  "review": [
+    "The handover names an owner and a review cadence.",
+    "It states what the agent does NOT answer, specifically.",
+    "It names the signal that would show the agent had started being wrong."
+  ]
+}

@@ -678,7 +678,12 @@ def test_lab_specs_are_well_formed():
         spec = json.loads((folder / name).read_text(encoding="utf-8"))
         for key in ("title", "brief", "checks"):
             assert key in spec, f"{name}: missing {key!r}"
-        assert spec["checks"], f"{name}: no checks, so GRADED would mean nothing"
+        if spec.get("graded"):
+            assert spec["checks"], f"{name}: marked graded but carries no checks"
+        else:
+            assert spec.get("review"), (
+                f"{name}: not graded, so it must say what a person reviews instead"
+            )
         for check in spec["checks"]:
             assert "name" in check, f"{name}: a check with no name"
             if check.get("kind") == "agent":

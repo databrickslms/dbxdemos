@@ -1,0 +1,54 @@
+{
+  "title": "Performance: Thinking Time vs Query Time",
+  "minutes": 40,
+  "graded": false,
+  "agent_title": "uncurated",
+  "brief": [
+    "Given the uncurated Meridian agent, split a slow answer into thinking time and query",
+    "time BEFORE changing anything. The two halves are fixed in completely different places,",
+    "and doubling the warehouse fixes neither if the problem is context.",
+    "",
+    "  - Measure both halves: system.query.history for the SQL, the Conversation API for",
+    "    the rest. Instrument your own poll loop as its own span; a naive loop has been",
+    "    measured adding 6-8 seconds that then get blamed on Genie.",
+    "  - Write the diagnosis before the fix.",
+    "  - Apply at least three fixes, each at the correct layer.",
+    "  - Re-measure and report before and after.",
+    "",
+    "Grading rewards a correct diagnosis over a large speedup. Identifying a thinking-bound",
+    "problem and improving it 20% scores higher than doubling the warehouse and getting lucky.",
+    "",
+    "The checks below confirm the agent you are tuning is actually the slow one.",
+    "",
+    "NOTE ON GRADING. The measurement and the diagnosis are what count, and a person reads those. The checks below only confirm you are tuning the right agent."
+  ],
+  "checks": [
+    {
+      "kind": "agent",
+      "name": "Prerequisite: the uncurated agent exists to tune",
+      "count": "data_sources.tables",
+      "at_least": 10,
+      "hint": "Create it with academy.create_agents(). It carries all 14 base objects on purpose."
+    },
+    {
+      "kind": "agent",
+      "name": "Prerequisite: it still carries the long instruction block",
+      "count": "instructions.text_instructions",
+      "at_least": 1,
+      "hint": "The prose is one of the three things you are measuring the cost of."
+    },
+    {
+      "kind": "agent",
+      "name": "Prerequisite: it has no example queries yet",
+      "count": "instructions.example_question_sqls",
+      "at_least": 0,
+      "required": false,
+      "hint": "Adding them is one of the fixes, not part of the starting state."
+    }
+  ],
+  "review": [
+    "The diagnosis was written before the fixes, and names which half dominated.",
+    "Poll-loop overhead is reported separately from Genie's own time.",
+    "Each of the three fixes is at the layer the measurement pointed to."
+  ]
+}

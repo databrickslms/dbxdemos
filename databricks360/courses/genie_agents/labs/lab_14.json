@@ -1,0 +1,21 @@
+{
+  "title": "Errors, Known Issues and Escalation",
+  "minutes": 30,
+  "graded": false,
+  "brief": [
+    "Given 8 symptom reports, classify each one: curation, platform bug, performance,",
+    "expected variation, or governance. Name the evidence you would capture for each.",
+    "Write the escalation note for the two that are genuine platform bugs.",
+    "",
+    "Knowing which problems were never yours to fix is most of this job. An escalation that",
+    "arrives without a reproduction, a workspace id and a timestamp goes to the back of a",
+    "queue and stays there."
+  ],
+  "checks": [],
+  "review": [
+    "Exactly two are classified as platform bugs, and they are the right two.",
+    "At least one is correctly called expected variation rather than a defect.",
+    "Each escalation note carries a reproduction, a timestamp, and what was already ruled out.",
+    "No item is escalated that the author could have fixed in curation."
+  ]
+}

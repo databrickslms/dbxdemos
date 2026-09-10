@@ -1,0 +1,34 @@
+{
+  "title": "Instructions, Example SQL and Trusted Assets",
+  "minutes": 40,
+  "graded": true,
+  "agent_title": "Wealth & Distribution",
+  "brief": [
+    "Instructions are the weakest way to shape an answer, so spend them carefully.",
+    "",
+    "  - Add 10 example queries. At least 3 parameterised, with typed, commented parameters.",
+    "  - Register 2 Unity Catalog functions as trusted assets: one that settles the AUM",
+    "    definition, one that settles the flow netting. 06_curated created four you can use.",
+    "  - Write 4 text instruction blocks, including one clarification rule for 'return' —",
+    "    which has three defensible readings, so the right behaviour is to ask.",
+    "  - Submit an instruction budget: what you spent, against the 100 instruction ceiling.",
+    "",
+    "Every example SQL query, every SQL function, and the whole General instructions block",
+    "each count as ONE instruction against that ceiling of 100.",
+    "",
+    "NOTE ON GRADING. Counts are automatic. Whether a clarification rule is any good is not —",
+    "a human reads that one."
+  ],
+  "checks": [
+    {"kind": "agent", "name": "The agent exists", "count": "data_sources.tables", "at_least": 1},
+    {"kind": "agent", "name": "10 or more example queries",
+     "count": "instructions.example_question_sqls", "at_least": 10,
+     "hint": "A worked example teaches Genie more per instruction than any paragraph."},
+    {"kind": "agent", "name": "Instruction text is present",
+     "count": "instructions.text_instructions", "at_least": 1,
+     "hint": "The whole General instructions block counts as one instruction, so write it once and well."},
+    {"kind": "agent", "name": "Still inside the 100-instruction ceiling",
+     "count": "instructions.example_question_sqls", "at_least": 0, "required": false,
+     "hint": "Example queries plus SQL functions plus the instruction block must stay under 100."}
+  ]
+}

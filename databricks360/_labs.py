@@ -15,6 +15,7 @@ is authoring a brief and a list of assertions, not writing more Python.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from importlib import resources
 
@@ -75,7 +76,13 @@ def _count(space: dict, path: str) -> int:
         if node is None:
             return 0
     if field:
-        return sum(len(i.get(field) or []) for i in node if isinstance(i, dict))
+        total = 0
+        for i in node:
+            if not isinstance(i, dict):
+                continue
+            v = i.get(field)
+            total += len(v) if isinstance(v, list) else (1 if v else 0)
+        return total
     if isinstance(node, dict):
         return sum(len(v) for v in node.values() if isinstance(v, list))
     return len(node or [])
@@ -100,11 +107,20 @@ def lab(course_id: str, number: int) -> None:
     for line in spec["brief"]:
         print(f"  {line}")
     print()
-    print("  The checker will verify:")
-    for c in spec["checks"]:
-        print(f"    - {c['name']}")
+    if spec["checks"]:
+        print("  The checker will verify:")
+        for c in spec["checks"]:
+            print(f"    - {c['name']}")
+    if spec.get("review"):
+        print()
+        print("  Reviewed by a person, not the checker:")
+        for r in spec["review"]:
+            print(f"    - {r}")
     print()
-    print(f"  When you are ready:  academy.check_lab('{course_id}', {number}, schema='<your schema>')")
+    if spec["checks"]:
+        print(f"  When you are ready:  academy.check_lab('{course_id}', {number}, schema='<your schema>')")
+    else:
+        print("  This lab has no automatic grade. The judgement is the exercise.")
 
 
 def check_lab(
@@ -117,6 +133,7 @@ def check_lab(
     ref_schema: str | None = None,
     ref_table_prefix: str | None = None,
     warehouse_id: str | None = None,
+    agent: str | None = None,
 ) -> LabResult:
     """Grade a lab by running the learner's objects against the reference.
 
@@ -158,7 +175,7 @@ def check_lab(
     # Agent labs are graded against the agent's own configuration rather than SQL.
     agent_space = None
     if any(c.get("kind") == "agent" for c in spec["checks"]):
-        want = spec.get("agent_title", "")
+        want = agent or spec.get("agent_title", "")
         spaces = w.api_client.do("GET", "/api/2.0/genie/spaces").get("spaces", [])
         match = [sp for sp in spaces if want.lower() in (sp.get("title") or "").lower()]
         if match:
@@ -174,7 +191,7 @@ def check_lab(
             if agent_space is None:
                 result.checks.append(CheckResult(
                     check["name"], False,
-                    f"no agent found whose name contains {spec.get('agent_title')!r}",
+                    f"no agent found whose name contains {want!r}",
                     check.get("required", True)))
                 continue
             got = _count(agent_space, check["count"])
@@ -190,8 +207,17 @@ def check_lab(
         sql = render_template("\n".join(check["sql"]), values)
         rows, err = run(sql)
         if err:
+            # "not built yet" is the usual reason a check cannot run, and a raw
+            # TABLE_OR_VIEW_NOT_FOUND tells a learner less than the hint does.
+            missing = re.search(r"table or view `[^`]+`\.`[^`]+`\.`([^`]+)`", err)
+            if missing:
+                detail = f"{missing.group(1)} does not exist yet"
+                if check.get("hint"):
+                    detail += f" — {check['hint']}"
+            else:
+                detail = f"query failed: {err}"
             result.checks.append(CheckResult(
-                check["name"], False, f"query failed: {err}", check.get("required", True)))
+                check["name"], False, detail, check.get("required", True)))
             continue
         # A check passes when its query returns exactly one row whose first
         # column is true. Anything else is a failure with the row as evidence.

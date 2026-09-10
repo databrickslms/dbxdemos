@@ -4,27 +4,66 @@
   "graded": true,
   "agent_title": "Wealth & Distribution",
   "brief": [
-    "Teach the agent your business language. On the Wealth & Distribution agent:",
+    "Teach the agent your business language. On your Wealth & Distribution agent:",
     "",
-    "  - Add synonyms for 10 business terms. Start with AUM, AUA, net new money, equities, cash.",
-    "  - Author 8 SQL expressions: 3 filters, 4 measures, 1 field.",
-    "  - Declare the join relationships rather than leaving Genie to guess them.",
+    "  - Author 8 SQL expressions: 3 filters, 4 measures, 1 field. A measure defined once",
+    "    here cannot drift the way a number retyped into five dashboards does.",
+    "  - Give every measure a display name, so what Genie shows matches what people say.",
+    "  - Declare the join relationships rather than leaving Genie to work them out.",
+    "  - Add synonyms for 10 business terms — AUM, AUA, net new money, equities, cash.",
     "",
     "Then re-run the questions that failed in Lab 4 and show which now pass.",
     "",
-    "Remember the ceiling: 200 knowledge store snippets per agent, shared between table",
-    "descriptions, join relationships and SQL expressions."
+    "Ceiling to respect: 200 knowledge store snippets per agent, shared between table",
+    "descriptions, join relationships and SQL expressions.",
+    "",
+    "NOTE ON GRADING. The SQL expressions are checked automatically. Synonyms and joins are",
+    "not, because a Genie space's payload has no field for either — they live in entity",
+    "matching and in the metric view's YAML, neither of which is readable back through the",
+    "API or information_schema. Those two are reviewed by a human. Do not skip them: they",
+    "are what turns 'net new money' into a query that runs."
   ],
   "checks": [
-    {"kind": "agent", "name": "The agent exists", "count": "data_sources.tables", "at_least": 1},
-    {"kind": "agent", "name": "8 or more SQL expressions", "count": "instructions.sql_snippets",
-     "at_least": 8, "hint": "Filters, measures and fields all count. A measure defined once cannot drift."},
-    {"kind": "agent", "name": "At least 3 filters", "count": "instructions.sql_snippets.filters",
-     "at_least": 3, "hint": "Settled only, exclude exchanges, discretionary only."},
-    {"kind": "agent", "name": "At least 4 measures", "count": "instructions.sql_snippets.measures",
-     "at_least": 4, "hint": "AUM, AUA, held-away and net flows are the four that get argued about."},
-    {"kind": "agent", "name": "10 or more synonyms across the SQL snippets",
-     "count": "instructions.sql_snippets.measures#synonyms", "at_least": 10, "required": false,
-     "hint": "Users say 'net new money', not 'sum of signed flow amounts'."}
+    {
+      "kind": "agent",
+      "name": "The agent exists",
+      "count": "data_sources.tables",
+      "at_least": 1
+    },
+    {
+      "kind": "agent",
+      "name": "8 or more SQL expressions",
+      "count": "instructions.sql_snippets",
+      "at_least": 8,
+      "hint": "Filters, measures and fields all count toward the eight."
+    },
+    {
+      "kind": "agent",
+      "name": "At least 3 filters",
+      "count": "instructions.sql_snippets.filters",
+      "at_least": 3,
+      "hint": "Settled only, exclude exchanges, discretionary only."
+    },
+    {
+      "kind": "agent",
+      "name": "At least 4 measures",
+      "count": "instructions.sql_snippets.measures",
+      "at_least": 4,
+      "hint": "AUM, AUA, held-away and net flows are the four that get argued about."
+    },
+    {
+      "kind": "agent",
+      "name": "At least 1 field expression",
+      "count": "instructions.sql_snippets.expressions",
+      "at_least": 1,
+      "hint": "A derived field, such as the signed flow amount."
+    },
+    {
+      "kind": "agent",
+      "name": "Every measure carries a display name",
+      "count": "instructions.sql_snippets.measures#display_name",
+      "at_least": 4,
+      "hint": "aum_usd is a column name. 'AUM' is what the business calls it."
+    }
   ]
 }

@@ -1,0 +1,41 @@
+{
+  "title": "Extend: API, Embedding and Multi-Agent",
+  "minutes": 40,
+  "graded": false,
+  "agent_title": "Wealth & Distribution",
+  "brief": [
+    "(a) Write a script that starts a conversation against the Meridian agent, polls",
+    "    correctly at a 2 second interval with a cap, retrieves the SQL and the result set,",
+    "    then asks a follow-up on the SAME conversation_id. Report your poll-loop overhead",
+    "    separately from Genie's time.",
+    "",
+    "(b) Export the agent's serialized_space, change one instruction, re-import it as a",
+    "    second agent, and diff the two configurations.",
+    "",
+    "Part (b) is how a Genie Agent becomes reviewable in version control instead of a thing",
+    "someone configured in a browser once.",
+    "",
+    "NOTE ON GRADING. The script is the deliverable, and a person reads it. The checks below only confirm the agent it runs against exists."
+  ],
+  "checks": [
+    {
+      "kind": "agent",
+      "name": "Prerequisite: the source agent exists",
+      "count": "data_sources.tables",
+      "at_least": 1
+    },
+    {
+      "kind": "agent",
+      "name": "Prerequisite: it carries instructions to modify and diff",
+      "count": "instructions.text_instructions",
+      "at_least": 1,
+      "hint": "Part (b) needs something to change."
+    }
+  ],
+  "review": [
+    "The poll loop uses a fixed interval with a cap, and is instrumented as its own span.",
+    "The follow-up reuses conversation_id rather than starting a new conversation.",
+    "The diff shows exactly one intended difference, and no accidental ones.",
+    "Poll-loop overhead is reported separately from Genie's time."
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "title": "Test, Benchmark and Prove It's Right",
+  "minutes": 40,
+  "graded": true,
+  "agent_title": "Wealth & Distribution",
+  "brief": [
+    "An agent nobody measured is an agent nobody should trust.",
+    "",
+    "Build a 30-question benchmark on the agent, with ground-truth SQL for each:",
+    "  10 smoke     — questions that must always work.",
+    "  12 coverage  — one per topic the agent claims to answer.",
+    "   8 traps     — at least one per planted flaw in the data.",
+    "",
+    "Two of the traps must be questions where the CORRECT behaviour is to ask for",
+    "clarification rather than answer. 'What was our return last year?' is one: gross,",
+    "net and money-weighted are all defensible, so answering with one of them silently",
+    "is the failure.",
+    "",
+    "Run it, record the score, fix the top 3 failures, re-run, report before and after."
+  ],
+  "checks": [
+    {"kind": "agent", "name": "The agent exists", "count": "data_sources.tables", "at_least": 1},
+    {"kind": "agent", "name": "30 or more benchmark questions", "count": "benchmarks.questions",
+     "at_least": 30, "hint": "Ten smoke, twelve coverage, eight traps."},
+    {"kind": "agent", "name": "Every benchmark question has a ground-truth answer",
+     "count": "benchmarks.questions#answer", "at_least": 30,
+     "hint": "A benchmark without an expected answer records a run, not a result."}
+  ]
+}

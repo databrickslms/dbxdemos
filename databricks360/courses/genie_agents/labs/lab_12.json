@@ -1,0 +1,21 @@
+{
+  "title": "Monitor, Triage and Keep It Accurate",
+  "minutes": 25,
+  "graded": false,
+  "brief": [
+    "Given a Monitor export of Meridian conversations with user feedback, produce a triage",
+    "sheet: root cause, the correct fix LAYER, owner, priority. Then fix the top five.",
+    "",
+    "The layer is the whole point. The same wrong answer can be a data problem, a knowledge",
+    "store gap, a missing example query, or a question nobody could answer. Fixing it in the",
+    "wrong layer works once and rots, because the next question phrased differently breaks",
+    "again. Prose that patches a data problem is the most common version of this mistake."
+  ],
+  "checks": [],
+  "review": [
+    "Every row names a layer, not just a fix.",
+    "At least one item is correctly triaged as 'the data is wrong', not an agent problem.",
+    "At least one is correctly closed as expected behaviour rather than a defect.",
+    "Priorities reflect how many people hit the issue, not how annoying it was to whoever reported it."
+  ]
+}
