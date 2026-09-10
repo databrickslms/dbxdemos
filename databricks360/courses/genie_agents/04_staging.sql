@@ -818,13 +818,15 @@ ALTER TABLE {{STAGING}}fct_holdings_raw
 -- ----------------------------------------------------------------------------
 -- Row counts and width
 -- ----------------------------------------------------------------------------
+-- Match on the suffix: in a single-schema layout the objects carry a prefix, so
+-- the table is mfg_staging_fct_holdings_raw rather than fct_holdings_raw.
 SELECT 'fct_holdings_raw' AS table_name,
        count(*) AS rows,
-       (SELECT count(*) FROM information_schema.columns
-         WHERE table_name = 'fct_holdings_raw') AS columns
+       (SELECT count(*) FROM {{INFO_SCHEMA}}.columns
+         WHERE table_name LIKE '%fct_holdings_raw') AS columns
 FROM {{STAGING}}fct_holdings_raw
 UNION ALL
 SELECT 'fct_aum_legacy', count(*),
-       (SELECT count(*) FROM information_schema.columns
-         WHERE table_name = 'fct_aum_legacy')
+       (SELECT count(*) FROM {{INFO_SCHEMA}}.columns
+         WHERE table_name LIKE '%fct_aum_legacy')
 FROM {{STAGING}}fct_aum_legacy;

@@ -27,7 +27,7 @@ from ._catalog import Course, available_courses, get_course
 from ._install import Installation, build_notebook_source, install
 from ._layout import Layout, resolve as resolve_layout
 
-__version__ = "0.8.1"
+__version__ = "0.8.2"
 __all__ = [
     "install",
     "create_agents",

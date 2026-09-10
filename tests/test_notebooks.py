@@ -640,3 +640,23 @@ def test_every_aliased_column_reference_resolves():
                     bad.append(f"{fname}: {alias}.{col} — {table} has no such column")
 
     assert not bad, "unresolved column references:\n  " + "\n  ".join(sorted(set(bad)))
+
+
+def test_no_sql_hardcodes_an_unprefixed_table_name():
+    """A single-schema install prefixes every object, so `table_name =
+    'fct_holdings_raw'` matches nothing and the check silently reports 0.
+    Metadata lookups must match the suffix, and go through {{INFO_SCHEMA}}.
+    """
+    from databricks360._catalog import read_sql
+
+    for nb in COURSE.notebooks:
+        if nb.language != "sql":
+            continue
+        sql = read_sql(COURSE, nb.sql)
+        assert not re.search(r"\bFROM\s+information_schema\.", sql), (
+            f"{nb.sql}: use {{{{INFO_SCHEMA}}}} so the lookup follows the install's catalog"
+        )
+        for m in re.finditer(r"table_name\s*=\s*'([a-z_][a-z_0-9]*)'", sql):
+            raise AssertionError(
+                f"{nb.sql}: table_name = '{m.group(1)}' misses a prefixed layout — use LIKE '%{m.group(1)}'"
+            )
