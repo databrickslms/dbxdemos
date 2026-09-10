@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from importlib import resources
 
 from ._catalog import get_course
-from ._layout import resolve
+from ._layout import resolve, resolve_catalog
 from ._notebook import render_template, unresolved_placeholders
 
 
@@ -141,18 +141,7 @@ def create_agents(
     # A Genie data source has no session, so it cannot resolve current_catalog()
     # the way the notebook SQL does. Its identifier must be three-level.
     if catalog is None:
-        found = []
-        for c in w.catalogs.list():
-            try:
-                if any(sc.name == schema for sc in w.schemas.list(c.name)):
-                    found.append(c.name)
-            except Exception:
-                continue
-        if len(found) != 1:
-            raise ValueError(
-                f"schema {schema!r} found in {found or 'no catalog'} — pass catalog="
-            )
-        catalog = found[0]
+        catalog = resolve_catalog(w, schema)
 
     if warehouse_id is None:
         warehouses = list(w.warehouses.list())

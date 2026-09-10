@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from importlib import resources
 
 from ._catalog import get_course
-from ._layout import resolve
+from ._layout import resolve, resolve_catalog
 
 
 @dataclass
@@ -112,6 +112,12 @@ def create_documents(
 
     schema = schema or course.default_schema
     table_prefix = table_prefix or course.default_table_prefix
+    # A /Volumes path is three segments: catalog, schema, volume. Without a
+    # catalog the layout yields two, and the upload fails with "Path contains an
+    # invalid volume name" — which is how notebook 08 failed the first time it
+    # was ever run as a notebook rather than called with an explicit catalog.
+    if catalog is None:
+        catalog = resolve_catalog(w, schema)
     layout = resolve(catalog=catalog, schema=schema, table_prefix=table_prefix,
                      create_catalog=False, create_schema=None, create_volume=False)
 

@@ -227,3 +227,26 @@ def setup_ddl(layout: Layout) -> str:
 
 def schema_list_sql(layout: Layout) -> str:
     return ", ".join(f"'{s}'" for s in layout.schemas)
+
+
+def resolve_catalog(w, schema: str) -> str:
+    """Find the catalog holding `schema`, for the callers that cannot defer to
+    current_catalog().
+
+    A SQL session resolves current_catalog() for itself, so the notebooks never
+    need this. A Genie data source and a /Volumes path both do: neither has a
+    session, and both must be fully qualified. Getting this wrong produces
+    "Path contains an invalid volume name", which does not name the cause.
+    """
+    found = []
+    for c in w.catalogs.list():
+        try:
+            if any(sc.name == schema for sc in w.schemas.list(c.name)):
+                found.append(c.name)
+        except Exception:
+            continue
+    if len(found) != 1:
+        raise ValueError(
+            f"schema {schema!r} found in {found or 'no catalog'} — pass catalog="
+        )
+    return found[0]

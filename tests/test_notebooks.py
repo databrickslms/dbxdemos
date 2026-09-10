@@ -884,3 +884,33 @@ def test_the_curated_agent_attaches_the_documents_volume():
     rendered = volume_path(layout)
     assert rendered.startswith("/Volumes/"), rendered
     assert rendered.endswith("documents"), rendered
+
+
+def test_volume_path_is_three_segments():
+    """/Volumes/<catalog>/<schema>/<volume>. Build it from a layout with no catalog
+    and you get two segments, an upload that fails with "Path contains an invalid
+    volume name", and no clue that the catalog was the problem."""
+    from databricks360._documents import volume_path
+
+    for kwargs in ({"catalog": "main", "schema": "genie_agent", "table_prefix": "mfg_"},
+                   {"catalog": "main"},
+                   {"catalog": "main", "schema": "training_you"}):
+        layout = resolve_layout(**kwargs)
+        path = volume_path(layout)
+        parts = [p for p in path.split("/") if p]
+        assert parts[0] == "Volumes", path
+        assert len(parts) == 4, f"{path} has {len(parts) - 1} segments after /Volumes, need 3"
+
+
+def test_both_entry_points_share_one_catalog_resolver():
+    """create_agents resolved the catalog from the schema and create_documents did
+    not, so the same call worked from one and failed from the other."""
+    import inspect
+    from databricks360 import _agents, _documents
+
+    for mod in (_agents, _documents):
+        src = inspect.getsource(mod)
+        assert "resolve_catalog" in src, f"{mod.__name__} does not resolve the catalog"
+        assert "for c in w.catalogs.list()" not in src, (
+            f"{mod.__name__} has its own copy of the resolver"
+        )
