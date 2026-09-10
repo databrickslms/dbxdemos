@@ -31,8 +31,16 @@
     "The learner compared against their Lab 0 sheet and said what they had missed."
   ],
   "inputs": {
-    "title": "Nine answers from the uncurated agent. Every one is wrong.",
+    "title": "Nine recorded answers from an uncurated agent. Every one is wrong.",
     "rows": [
+      "These nine were RECORDED from an uncurated agent. They are a case file, not a",
+      "prediction — ask your own agent the same questions and you will find it handles",
+      "some of them correctly now.",
+      "",
+      "That is not a flaw in the exercise. It is the exercise. The model improves; your",
+      "data does not improve on its own, and the failures that survive are the ones",
+      "that were never the model's fault.",
+      "",
       "For each: which stage failed, and which input was missing?",
       "",
       "--- 1 -------------------------------------------------------------------",
