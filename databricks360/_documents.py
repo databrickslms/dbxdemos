@@ -12,12 +12,12 @@ or the other.
 PDFs are written if fpdf is installed, plain text otherwise; the text fallback
 keeps this working with no extra dependency.
 
-One caveat, measured rather than assumed: attaching the volume to an agent through
-`serialized_space` is accepted and round-trips, but on a Databricks Free Edition
-workspace Agent mode then reports that it has no document-search tool available.
-The files are there and the attachment is recorded; whether the agent can read
-them appears to depend on the feature being enabled for your workspace. Check
-before you build a session around it.
+Attaching the volume is not enough to read it. A workspace admin must turn on the
+preview **Analyze Files in Volumes with Genie Agents** from the Previews page;
+until then the attachment is accepted, the files sit in the volume, and the agent
+replies that it has no document-search tool. File analysis also runs in Agent
+mode only, and without content search the agent retrieves from at most five files
+per question — worth remembering against forty documents.
 """
 
 from __future__ import annotations
