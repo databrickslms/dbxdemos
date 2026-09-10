@@ -18,5 +18,25 @@
     "Each has an implementation route, and 'an instruction' is used sparingly.",
     "At least one disagreement is recorded rather than resolved by whoever spoke louder.",
     "'Client' is recognised as harder than it looks — household, relationship or account."
-  ]
+  ],
+  "inputs": {
+    "title": "Glossary template, and the five terms to start with",
+    "rows": [
+      "Term | What it means | Owner (a person) | Implementation route | Disagreement recorded",
+      "-----|---------------|------------------|----------------------|----------------------",
+      "     |               |                  |                      |",
+      "",
+      "Implementation route is one of: metric view · UC function · curated view · instruction.",
+      "Reach for 'instruction' last — it is the weakest place to settle a definition.",
+      "",
+      "Start with these five, then add five of your own:",
+      "  AUM          three defensible readings live in this data",
+      "  return       four columns could answer it, across six period types",
+      "  net flows    depends on whether exchanges count",
+      "  quarter-end  fiscal or calendar, last business day or last calendar day",
+      "  client       household, relationship, or account — the data has only one of these",
+      "",
+      "If you and your partner agree on all ten immediately, you picked easy terms."
+    ]
+  }
 }

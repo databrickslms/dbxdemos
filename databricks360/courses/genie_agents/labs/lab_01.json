@@ -23,5 +23,28 @@
     "At least one is correctly called 'not a data question'.",
     "The definitions list for the hardest question names a disagreement, not just terms.",
     "The learner noticed that 'needs a curated domain' is a judgement about effort, not a property of the question."
-  ]
+  ],
+  "inputs": {
+    "title": "The twelve questions, as they arrived in the inbox",
+    "rows": [
+      " 1. \"What's our AUM?\"  — Head of Distribution, no other context",
+      " 2. \"Can someone pull the flows for the Northeast last quarter?\"",
+      " 3. \"Why did the Q2 board pack show a different AUM to the client statements?\"",
+      " 4. \"I need a list of every client in California with more than $5m.\"",
+      " 5. \"The reconciliation job is failing with a null pointer on line 214.\"",
+      " 6. \"How did the multi-asset strategies do against benchmark last year?\"",
+      " 7. \"Which advisors are underperforming?\"",
+      " 8. \"Can you add a column to the custodian feed for accrued income?\"",
+      " 9. \"What were net sales in FY2026 Q3, excluding exchanges?\"",
+      "10. \"Is it worth opening an office in Denver?\"",
+      "11. \"How much do we manage for the Hartmann family?\"",
+      "12. \"Give me the same as last month but for fixed income.\"",
+      "",
+      "Four buckets: Genie One, Genie Agent, Genie Code, Not a data question.",
+      "",
+      "Two are deliberately unfair. Number 7 has no definition of underperforming;",
+      "number 10 is a business judgement no data answers. Number 11 looks simple and",
+      "is not: 'the Hartmann family' has no equivalent in the data at all."
+    ]
+  }
 }

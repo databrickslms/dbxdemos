@@ -14,14 +14,37 @@
     "Recognising a question Genie should not be asked is the skill being tested."
   ],
   "checks": [
-    {"kind": "agent", "name": "Prerequisite: an agent exists to ask",
-     "count": "data_sources.tables", "at_least": 1,
-     "hint": "Run notebook 08_agents, or build your own in the Genie UI."}
+    {
+      "kind": "agent",
+      "name": "Prerequisite: an agent exists to ask",
+      "count": "data_sources.tables",
+      "at_least": 1,
+      "hint": "Run notebook 08_agents, or build your own in the Genie UI."
+    }
   ],
   "review": [
     "Each rewrite names a period, a currency and a definition where the original left them open.",
     "Exactly two are identified as unanswerable, and they are the right two.",
     "The reason given is about the data or the definition, not about phrasing.",
     "The pasted SQL is read, not just pasted — the learner says whether it did what they meant."
-  ]
+  ],
+  "inputs": {
+    "title": "The eight questions, exactly as colleagues wrote them",
+    "rows": [
+      " 1. \"AUM please\"",
+      " 2. \"How are we doing this year?\"",
+      " 3. \"Show me the top clients\"",
+      " 4. \"What were flows last quarter?\"",
+      " 5. \"Equities exposure?\"",
+      " 6. \"Compare California to the rest\"",
+      " 7. \"What's our return?\"",
+      " 8. \"How many clients do we have and are they growing\"",
+      "",
+      "Rewrite each so a stranger would produce the same number you meant. Name the",
+      "period, the currency, and which definition you want.",
+      "",
+      "Two of the eight cannot be fixed by rewording. Find them, and say why — the",
+      "reason must be about the data or an unsettled definition, not the phrasing."
+    ]
+  }
 }

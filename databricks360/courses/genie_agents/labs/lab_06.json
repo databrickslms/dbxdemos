@@ -43,5 +43,40 @@
     "The CFO's zero rows is predicted, and explained as a row filter rather than missing data.",
     "The regional lead's firm-wide total is predicted, and the reason is given.",
     "An empty answer and a permission error are distinguished, not conflated."
-  ]
+  ],
+  "inputs": {
+    "title": "The Meridian access matrix, and eight questions to predict",
+    "rows": [
+      "PERSONAS",
+      "  ana.reyes    Regional lead, WEST      row filter on dim_advisor.region = user's region",
+      "  cfo.office   CFO office               no region assigned",
+      "  j.okafor     Wealth analyst           full read, masks apply",
+      "  svc.bi       Service principal (BI)   read on curated views only",
+      "",
+      "ROW FILTER   dim_advisor.region — a user sees only their own coverage region.",
+      "             A user with no region assigned matches nothing.",
+      "COLUMN MASKS dim_client.ssn_last4, .email, .dob, .annual_income — masked unless",
+      "             the caller is in the mfg_pii_readers group.",
+      "GRANTS       svc.bi has no grant on dim_client or the staging schema.",
+      "",
+      "PREDICT for each: full answer · masked answer · empty answer · permission error",
+      "",
+      " 1. ana.reyes   : \"What was AUM in the West region?\"",
+      " 2. ana.reyes   : \"What was firm-wide AUM?\"",
+      " 3. cfo.office  : \"What was firm-wide AUM?\"",
+      " 4. j.okafor    : \"List clients with their email addresses.\"",
+      " 5. svc.bi      : \"List clients with their email addresses.\"",
+      " 6. svc.bi      : \"What were net flows last quarter?\"",
+      " 7. ana.reyes   : \"How many clients are in the Northeast?\"",
+      " 8. j.okafor    : \"What is in fct_holdings_raw?\"",
+      "",
+      "Two are the interesting ones. Number 3 is the CFO who correctly sees ZERO rows",
+      "— a row filter, not missing data. Number 2 is the regional lead who correctly",
+      "sees the firm-wide total, because the filter applies to dim_advisor and that",
+      "query never reads it.",
+      "",
+      "An empty answer and a permission error are different outcomes. Genie shows them",
+      "differently, and confusing the two is the most common mistake in this lab."
+    ]
+  }
 }

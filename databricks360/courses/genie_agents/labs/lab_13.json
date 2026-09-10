@@ -50,5 +50,44 @@
     "The diagnosis was written before the fixes, and names which half dominated.",
     "Poll-loop overhead is reported separately from Genie's own time.",
     "Each of the three fixes is at the layer the measurement pointed to."
-  ]
+  ],
+  "inputs": {
+    "title": "Measurement worksheet — fill this in before you change anything",
+    "rows": [
+      "BASELINE                                        before        after",
+      "  total response time (wall clock)              ______ ms     ______ ms",
+      "  execution_duration_ms        (pure SQL)       ______ ms     ______ ms",
+      "  compilation_duration_ms                       ______ ms     ______ ms",
+      "  waiting_for_compute_duration_ms  (cold start) ______ ms     ______ ms",
+      "  waiting_at_capacity_duration_ms  (queue)      ______ ms     ______ ms",
+      "  result_fetch_duration_ms                      ______ ms     ______ ms",
+      "  gap: submit -> EXECUTING_QUERY   (THINKING)   ______ ms     ______ ms",
+      "  your own poll-loop overhead                   ______ ms     ______ ms",
+      "",
+      "  VERDICT: thinking-bound or query-bound?  ______________________",
+      "",
+      "WHERE THE NUMBERS COME FROM",
+      "  system.query.history   — the five *_duration_ms columns above. Filter to the",
+      "                           agent's warehouse and window; use client_application",
+      "                           to exclude BI and notebook traffic.",
+      "  Conversation API       — submit -> EXECUTING_QUERY is the thinking half;",
+      "                           EXECUTING_QUERY -> COMPLETED is SQL plus fetch.",
+      "                           Timestamp these yourself.",
+      "",
+      "THREE TRAPS",
+      "  1. Do not time Genie from last_updated_timestamp. It moves, and it is not reliable.",
+      "  2. Instrument your poll loop as its own span. A naive loop has been measured",
+      "     adding 6-8 seconds that then get blamed on Genie.",
+      "  3. There is no statement_id in the API response. Match on statement_text plus",
+      "     warehouse plus a narrow time window.",
+      "",
+      "THREE FIXES — name the layer for each, then apply",
+      "  fix 1  ______________________________  layer: ____________________",
+      "  fix 2  ______________________________  layer: ____________________",
+      "  fix 3  ______________________________  layer: ____________________",
+      "",
+      "A correct diagnosis with a 20% gain scores higher than doubling the warehouse",
+      "and getting lucky. Write the diagnosis before you touch anything."
+    ]
+  }
 }

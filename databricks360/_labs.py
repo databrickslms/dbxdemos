@@ -99,7 +99,12 @@ def _spec(course, lab: int) -> dict:
 
 
 def lab(course_id: str, number: int) -> None:
-    """Print a lab's brief and what the checker will look for."""
+    """Print a lab's brief, the material it works on, and what the checker looks for.
+
+    Several labs open with "you are given" — the twelve inbox questions, the nine
+    wrong answers, the access matrix. Those live here, in the spec, so the lab can
+    actually be started rather than merely described.
+    """
     course = get_course(course_id)
     spec = _spec(course, number)
     print(f"Lab {number} — {spec['title']}   ({spec.get('minutes', '?')} min"
@@ -107,6 +112,13 @@ def lab(course_id: str, number: int) -> None:
     print()
     for line in spec["brief"]:
         print(f"  {line}")
+    if spec.get("inputs"):
+        print()
+        print("  " + "=" * 68)
+        print(f"  {spec['inputs']['title']}")
+        print("  " + "=" * 68)
+        for row in spec["inputs"]["rows"]:
+            print(f"  {row}" if row else "")
     print()
     if spec["checks"]:
         print("  The checker will verify:")

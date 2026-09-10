@@ -759,3 +759,25 @@ def test_agent_labs_name_an_agent_and_sql_labs_name_a_placeholder():
                 assert any(t in sql for t in ("{{YOU", "{{CORE}}", "{{REF")), (
                     f"{p.name}: {check['name']!r} addresses no schema placeholder"
                 )
+
+
+def test_labs_that_promise_material_actually_ship_it():
+    """A brief saying 'you are given twelve questions' with nothing attached is
+    worse than no brief: the learner cannot start and does not know why."""
+    import json
+    from importlib import resources
+
+    # "Given the access matrix", "you get nine wrong answers", "Given a Monitor
+    # export" — any of these is a promise that something is attached.
+    promises = re.compile(r"\bgiven\b|you are given|you're given|you get \w+ (wrong|questions)", re.I)
+    folder = resources.files(COURSE.package) / "labs"
+    for p in sorted(folder.iterdir()):
+        if not p.name.endswith(".json"):
+            continue
+        spec = json.loads(p.read_text(encoding="utf-8"))
+        brief = " ".join(spec["brief"])
+        if promises.search(brief):
+            assert spec.get("inputs"), (
+                f"{p.name}: the brief promises material but the spec ships none"
+            )
+            assert spec["inputs"].get("rows"), f"{p.name}: inputs block is empty"

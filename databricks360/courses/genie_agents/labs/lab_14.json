@@ -17,5 +17,35 @@
     "At least one is correctly called expected variation rather than a defect.",
     "Each escalation note carries a reproduction, a timestamp, and what was already ruled out.",
     "No item is escalated that the author could have fixed in curation."
-  ]
+  ],
+  "inputs": {
+    "title": "Eight symptom reports, as they were raised",
+    "rows": [
+      "Classify: curation · platform bug · performance · expected variation · governance",
+      "",
+      "1. \"Genie gave me a different number this morning than yesterday for the same",
+      "   question. Nothing changed in the data.\"",
+      "",
+      "2. \"Every question takes 40 seconds. The warehouse is a 2X-Large and idle.\"",
+      "",
+      "3. \"It says 'no results' for Northeast but there are definitely clients there.\"",
+      "",
+      "4. \"The answer cites a column that does not exist in the table I can see.\"",
+      "",
+      "5. \"I asked for client emails and got a column of asterisks.\"",
+      "",
+      "6. \"The SQL it wrote is valid but it returned an error about statement timeout",
+      "   after about 90 seconds. It reproduces every time on the same question.\"",
+      "",
+      "7. \"My colleague gets a number and I get an empty table for the same question.\"",
+      "",
+      "8. \"The conversation stopped responding after roughly ten minutes and the",
+      "   answer never appeared, but it still shows on our usage.\"",
+      "",
+      "Exactly two are platform bugs. Write the escalation note for those two: a",
+      "reproduction, a timestamp, the workspace id, and what you already ruled out.",
+      "",
+      "At least one is expected variation and should be closed, not escalated."
+    ]
+  }
 }
