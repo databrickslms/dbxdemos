@@ -61,6 +61,7 @@ def main() -> None:
     ap.add_argument("--warehouse-id")
     ap.add_argument("--bare", action="store_true")
     ap.add_argument("--create-catalog", action="store_true")
+    ap.add_argument("--no-volume", action="store_true")
     ap.add_argument("--max-wait", type=int, default=3600,
                     help="seconds to wait for one long statement")
     ap.add_argument("--stop-on-error", action="store_true")
@@ -85,9 +86,11 @@ def main() -> None:
     else:
         schema = args.schema or course.default_schema
         prefix = args.table_prefix or course.default_table_prefix
+    # create_volume must match what install() does, or a full run leaves no
+    # documents volume and Module 3 has nowhere to put its files.
     layout = resolve(catalog=args.catalog, schema=schema, table_prefix=prefix,
                      create_catalog=args.create_catalog, create_schema=None,
-                     create_volume=False)
+                     create_volume=not args.no_volume)
     values = {
         "CATALOG": layout.catalog or "current_catalog()",
         "INFO_SCHEMA": ("information_schema" if layout.catalog is None
