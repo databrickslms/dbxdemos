@@ -781,3 +781,22 @@ def test_labs_that_promise_material_actually_ship_it():
                 f"{p.name}: the brief promises material but the spec ships none"
             )
             assert spec["inputs"].get("rows"), f"{p.name}: inputs block is empty"
+
+
+def test_certification_uses_the_system_tag():
+    """`certified` as a custom tag key looks right and does nothing. The documented
+    effect on Genie's ranking belongs to the system-governed tag
+    `system.certification_status`, whose values are certified and deprecated."""
+    from databricks360._catalog import read_sql
+
+    for nb in COURSE.notebooks:
+        if nb.language != "sql":
+            continue
+        sql = read_sql(COURSE, nb.sql)
+        for m in re.finditer(r"SET TAGS \(([^)]*)\)", sql):
+            body = m.group(1)
+            for key in re.findall(r"'([a-z_.]+)'\s*=", body):
+                assert key not in ("certified", "deprecated"), (
+                    f"{nb.sql}: '{key}' is a custom tag. Use "
+                    f"'system.certification_status' = '{key}'"
+                )

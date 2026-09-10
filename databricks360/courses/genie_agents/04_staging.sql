@@ -809,10 +809,10 @@ WHERE s.snapshot_date = last_day(s.snapshot_date)
 -- Mark both as superseded, so nobody has to ask which table to use
 -- ============================================================================
 ALTER TABLE {{STAGING}}fct_aum_legacy
-  SET TAGS ('deprecated' = 'true', 'superseded_by' = 'fct_aum_snapshot');
+  SET TAGS ('system.certification_status' = 'deprecated', 'superseded_by' = 'fct_aum_snapshot');
 
 ALTER TABLE {{STAGING}}fct_holdings_raw
-  SET TAGS ('deprecated' = 'true', 'note' = 'raw custodian feed, not for reporting');
+  SET TAGS ('system.certification_status' = 'deprecated', 'note' = 'raw custodian feed, not for reporting');
 
 
 -- ----------------------------------------------------------------------------

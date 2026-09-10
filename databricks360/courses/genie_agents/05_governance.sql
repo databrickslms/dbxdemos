@@ -77,11 +77,15 @@ ALTER TABLE {{CORE}}dim_client ALTER COLUMN annual_income
 -- The staging objects are tagged in notebook 04, where they are created, so
 -- this notebook does not depend on 04 having been run.
 -- ============================================================================
+-- `system.certification_status` is a system-governed tag with two values,
+-- certified and deprecated. A custom tag that merely spells the word "certified"
+-- is not the same thing: the effect on how Genie ranks an object is documented
+-- for the system tag, and only for that.
 ALTER TABLE {{CORE}}fct_aum_snapshot
-  SET TAGS ('certified' = 'true', 'owner' = 'wealth_analytics');
+  SET TAGS ('system.certification_status' = 'certified', 'owner' = 'wealth_analytics');
 
 ALTER TABLE {{CORE}}fct_flows
-  SET TAGS ('certified' = 'true', 'owner' = 'wealth_analytics');
+  SET TAGS ('system.certification_status' = 'certified', 'owner' = 'wealth_analytics');
 
 
 -- ----------------------------------------------------------------------------
