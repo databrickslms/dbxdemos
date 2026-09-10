@@ -140,7 +140,7 @@ def check_lab(
     course_id: str,
     number: int,
     *,
-    schema: str,
+    schema: str | None = None,
     catalog: str | None = None,
     ref_catalog: str | None = None,
     ref_schema: str | None = None,
@@ -164,15 +164,20 @@ def check_lab(
                   schema=ref_schema or course.default_schema,
                   table_prefix=ref_table_prefix or course.default_table_prefix,
                   create_catalog=False, create_schema=None, create_volume=False)
-    you = f"{catalog}.{schema}" if catalog else schema
+    needs_schema = any(c.get("kind") != "agent" for c in spec["checks"])
+    if needs_schema and not schema:
+        raise ValueError(
+            f"lab {number} checks objects you built, so it needs schema='<your schema>'"
+        )
+    you = (f"{catalog}.{schema}" if catalog else schema) if schema else "(not needed)" 
     # information_schema sits at catalog level, so a metadata query cannot be
     # written as <catalog>.<schema>.information_schema — that is four name parts.
     # YOU_INFO addresses it correctly and YOU_SCHEMA filters it to the learner's work.
     values = {
         "CORE": ref.core, "REF": ref.ref, "STAGING": ref.staging,
-        "YOU": f"{you}.",
+        "YOU": f"{you}." if schema else "",
         "YOU_INFO": f"{catalog}.information_schema" if catalog else "information_schema",
-        "YOU_SCHEMA": f"'{schema}'",
+        "YOU_SCHEMA": f"'{schema}'" if schema else "''",
         # Lab 0 grades the installed dataset rather than something the learner built,
         # so it needs to address the reference schema's metadata too.
         "REF_INFO": (f"{ref.catalog}.information_schema" if ref.catalog

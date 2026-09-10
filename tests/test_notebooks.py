@@ -949,3 +949,23 @@ def test_cleanup_covers_everything_the_course_installs():
     src = inspect.getsource(_cleanup)
     for thing in ("genie/spaces", "DROP SCHEMA", "volume_path", "workspace.delete"):
         assert thing in src, f"cleanup never removes {thing}"
+
+
+def test_agent_only_labs_do_not_require_a_schema():
+    """Lab 9 grades a Genie Agent. Making the caller invent a schema for it puts a
+    meaningless argument in the instructions, which teaches the wrong thing about
+    what the lab is checking."""
+    import inspect
+    import json
+    from importlib import resources
+    from databricks360 import check_lab
+
+    assert inspect.signature(check_lab).parameters["schema"].default is None
+
+    folder = resources.files(COURSE.package) / "labs"
+    for p in sorted(folder.iterdir()):
+        if not p.name.endswith(".json"):
+            continue
+        spec = json.loads(p.read_text(encoding="utf-8"))
+        if spec["checks"] and all(c.get("kind") == "agent" for c in spec["checks"]):
+            assert spec.get("agent_title"), f"{p.name}: agent-only lab with no agent_title"
