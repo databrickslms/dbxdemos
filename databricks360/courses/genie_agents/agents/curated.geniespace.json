@@ -1,0 +1,202 @@
+{
+  "version": 2,
+  "config": {
+    "sample_questions": [
+      {
+        "id": "399d60f6de3143f3f949cecf2559a1f2",
+        "question": [
+          "What was our AUM in California at the end of last year?"
+        ]
+      },
+      {
+        "id": "f938d0a436425743b9b03176201422a6",
+        "question": [
+          "What were net flows by fiscal quarter?"
+        ]
+      },
+      {
+        "id": "cdeb11b29b3d03a6fcd0bc452fe7c506",
+        "question": [
+          "How does AUM split by asset class?"
+        ]
+      },
+      {
+        "id": "b93ad95ac3bd4cca38f77feb63ad59e9",
+        "question": [
+          "Which client segments hold the most assets?"
+        ]
+      }
+    ]
+  },
+  "data_sources": {
+    "tables": [
+      {
+        "identifier": "{{CORE}}vw_aum_reporting"
+      },
+      {
+        "identifier": "{{CORE}}vw_net_flows"
+      },
+      {
+        "identifier": "{{CORE}}dim_client_safe"
+      },
+      {
+        "identifier": "{{CORE}}dim_portfolio"
+      },
+      {
+        "identifier": "{{CORE}}dim_asset_class"
+      },
+      {
+        "identifier": "{{CORE}}dim_date"
+      },
+      {
+        "identifier": "{{CORE}}mv_wealth_metrics"
+      }
+    ]
+  },
+  "instructions": {
+    "text_instructions": [
+      {
+        "id": "2feb5d322bf1a62845e20a40eabb4cd0",
+        "content": [
+          "Meridian Financial Group — wealth reporting for the distribution and client teams.\n",
+          "\n",
+          "Scope: month-end AUM, net flows, and the client and portfolio dimensions behind them.\n",
+          "Performance, fee revenue, prospect data and intraday positions are not in this agent.\n",
+          "\n",
+          "AUM means discretionary managed assets, converted to USD. Held-away assets are reported\n",
+          "on but not managed: they are excluded from AUM and belong to AUA. Use `Assets Under\n",
+          "Advisement` when the question says advised, AUA, or total client assets.\n",
+          "\n",
+          "The fiscal year starts 1 October, so FY2026 is 2025-10-01 to 2026-09-30. A reporting date\n",
+          "is the last business day of the month. When no period is given, use the latest reporting date.\n",
+          "\n",
+          "Net flows are `amount_usd * external_sign` summed. `vw_net_flows` already excludes\n",
+          "unsettled and cancelled instructions, and gives exchanges a sign of 0 so they never count\n",
+          "as sales or redemptions.\n",
+          "\n",
+          "Say which period and currency every figure covers.\n"
+        ]
+      }
+    ],
+    "example_question_sqls": [
+      {
+        "id": "28d12154cb37776e3c749817c93651ae",
+        "question": [
+          "What was our AUM in California at the end of last year?"
+        ],
+        "sql": [
+          "SELECT `State`, `AUM`\n",
+          "FROM {{CORE}}mv_wealth_metrics\n",
+          "WHERE `State` = 'CA'\n",
+          "  AND `Reporting Date` = (\n",
+          "    SELECT max(as_of_date) FROM {{CORE}}vw_aum_reporting WHERE fiscal_year = 'FY2026'\n",
+          "  )\n",
+          "GROUP BY ALL;\n"
+        ]
+      },
+      {
+        "id": "89b2fe8fb1c7d73916adc267fa6db48f",
+        "question": [
+          "What were net flows by fiscal quarter?"
+        ],
+        "sql": [
+          "SELECT fiscal_quarter,\n",
+          "       sum(amount_usd * external_sign) AS net_flows_usd\n",
+          "FROM {{CORE}}vw_net_flows\n",
+          "GROUP BY fiscal_quarter\n",
+          "ORDER BY fiscal_quarter;\n"
+        ]
+      },
+      {
+        "id": "452b483a5ef486b62086d434997c6afb",
+        "question": [
+          "How does AUM split by asset class?"
+        ],
+        "sql": [
+          "SELECT `Asset Class`, `AUM`\n",
+          "FROM {{CORE}}mv_wealth_metrics\n",
+          "GROUP BY ALL\n",
+          "ORDER BY `AUM` DESC;\n"
+        ]
+      }
+    ],
+    "sql_snippets": {
+      "filters": [
+        {
+          "id": "c626414bae46d3a76a80c81ff7125a0f",
+          "display_name": "external flows only",
+          "sql": [
+            "NOT is_internal"
+          ]
+        },
+        {
+          "id": "14d876dfca68793545dcfb405aaa7d5f",
+          "display_name": "discretionary only",
+          "sql": [
+            "is_discretionary"
+          ]
+        }
+      ],
+      "expressions": [
+        {
+          "id": "050b79f941b0bf32bf8e5b0d58ab275e",
+          "alias": "net_flow_usd",
+          "display_name": "signed flow",
+          "sql": [
+            "amount_usd * external_sign"
+          ]
+        }
+      ],
+      "measures": [
+        {
+          "id": "17a328129055303355143670e20837b7",
+          "alias": "aum_usd",
+          "display_name": "AUM",
+          "sql": [
+            "SUM(CASE WHEN is_discretionary THEN managed_value_usd ELSE 0 END)"
+          ]
+        },
+        {
+          "id": "2b4b53b7c058effc1943aeecf1046968",
+          "alias": "aua_usd",
+          "display_name": "Assets Under Advisement",
+          "sql": [
+            "SUM(total_advised_value_usd)"
+          ]
+        },
+        {
+          "id": "24caa63f3d7eddd24f5f8166bd89f90c",
+          "alias": "net_flows_usd",
+          "display_name": "Net Flows",
+          "sql": [
+            "SUM(amount_usd * external_sign)"
+          ]
+        }
+      ]
+    }
+  },
+  "benchmarks": {
+    "questions": [
+      {
+        "id": "6ca22229ab80fe9d3a2dc0c4e63c047b",
+        "question": [
+          "What was our AUM in California at the end of last year?"
+        ],
+        "answer": [
+          {
+            "format": "SQL",
+            "content": [
+              "SELECT `State`, `AUM`\n",
+              "FROM {{CORE}}mv_wealth_metrics\n",
+              "WHERE `State` = 'CA'\n",
+              "  AND `Reporting Date` = (\n",
+              "    SELECT max(as_of_date) FROM {{CORE}}vw_aum_reporting WHERE fiscal_year = 'FY2026'\n",
+              "  )\n",
+              "GROUP BY ALL;\n"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
