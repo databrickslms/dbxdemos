@@ -21,9 +21,19 @@
 -- Row filter — advisor coverage region
 -- A regional sales lead sees their own region. mfg_unrestricted sees all.
 -- ============================================================================
+-- The first clause is what keeps this notebook from bricking the lab. The mfg_*
+-- account groups are something an admin creates; until they exist, nobody is a
+-- member of any of them, and a filter that nobody satisfies hides every advisor
+-- row from everybody -- including you. Downstream that means no Region or State
+-- dimension, so Module 7's demo question about California returns nothing for a
+-- reason that has nothing to do with the lesson.
+--
+-- Naming the installing user preserves the lesson exactly: the personas in Lab 6
+-- still see what their groups allow, and you still see your own lab.
 CREATE OR REPLACE FUNCTION {{CORE}}region_filter(region STRING)
 RETURN
-  is_account_group_member('mfg_unrestricted')
+  current_user() = '{{OWNER}}'
+  OR is_account_group_member('mfg_unrestricted')
   OR (region = 'NE'   AND is_account_group_member('mfg_region_ne'))
   OR (region = 'SE'   AND is_account_group_member('mfg_region_se'))
   OR (region = 'MW'   AND is_account_group_member('mfg_region_mw'))

@@ -828,3 +828,38 @@ def test_document_corpus_is_complete_and_grounded():
     for flaw in ["held-away", "exchange", "fiscal", "discretionary", "business day",
                  "time-weighted", "settlement date", "classification"]:
         assert flaw in corpus, f"no document mentions {flaw!r}"
+
+
+def test_row_filter_does_not_lock_out_the_installer():
+    """The mfg_* account groups are created by an admin and may not exist. A row
+    filter satisfied by nobody hides every advisor row from everybody, including
+    whoever installed the lab — and then Region and State vanish from the metric
+    view, so Module 7's California demo fails for a reason that is not the lesson.
+    """
+    from databricks360._catalog import read_sql
+
+    sql = read_sql(COURSE, "05_governance.sql")
+    m = re.search(r"CREATE OR REPLACE FUNCTION \{\{CORE\}\}region_filter.*?;", sql, re.S)
+    assert m, "region_filter is gone"
+    assert "{{OWNER}}" in m.group(0), (
+        "region_filter has no owner clause: applying it would empty dim_advisor "
+        "for everyone until the account groups exist"
+    )
+
+    # And the placeholder has to actually be substituted, or it renders literally.
+    layout = resolve_layout(schema="genie_agent", table_prefix="mfg_")
+    nb = next(n for n in COURSE.notebooks if n.name == "05_governance")
+    rendered = build_notebook_source(COURSE, nb, catalog=None, tier="small",
+                                     layout=layout, owner="someone@example.com")
+    assert "{{OWNER}}" not in rendered
+    assert "someone@example.com" in rendered
+
+
+def test_masks_do_not_carry_an_owner_bypass():
+    """A mask returns rows, so it never bricks the lab — and an owner bypass would
+    quietly hand the person doing Module 6 alone the unmasked PII it is about."""
+    from databricks360._catalog import read_sql
+
+    sql = read_sql(COURSE, "05_governance.sql")
+    for m in re.finditer(r"CREATE OR REPLACE FUNCTION \{\{CORE\}\}mask_\w+.*?;", sql, re.S):
+        assert "{{OWNER}}" not in m.group(0), "a column mask should not exempt the owner"

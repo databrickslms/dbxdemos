@@ -95,6 +95,7 @@ def main() -> None:
         "CORE": layout.core, "REF": layout.ref, "STAGING": layout.staging,
         "SCHEMA_LIST": schema_list_sql(layout), "SETUP_DDL": setup_ddl(layout),
         "TIER": args.tier,
+        "OWNER": w.current_user.me().user_name or "",
     }
     values.update(course.tiers[args.tier].values)
 

@@ -111,6 +111,7 @@ def build_notebook_source(
     catalog: str,
     tier: str,
     layout: Layout | None = None,
+    owner: str = "",
 ) -> str:
     """Render one notebook's source. Pure — no workspace calls, so it is testable."""
     if tier not in course.tiers and course.tiers:
@@ -139,6 +140,10 @@ def build_notebook_source(
         "SCHEMA_LIST": schema_list_sql(layout),
         "SETUP_DDL": setup_ddl(layout),
         "TIER": tier,
+        # Who installed this. The governance notebook needs it so its row filter
+        # does not lock the installer out of their own lab before the mfg_* account
+        # groups exist. Empty is safe: current_user() never equals ''.
+        "OWNER": owner,
     }
     if course.tiers:
         values.update(course.tiers[tier].values)
@@ -229,8 +234,16 @@ def install(
 
         client.workspace.mkdirs(folder)
 
+    owner = ""
+    if client is not None:
+        try:
+            owner = client.current_user.me().user_name or ""
+        except Exception:  # pragma: no cover - offline
+            owner = ""
+
     for nb in course.notebooks:
-        source = build_notebook_source(course, nb, catalog=catalog, tier=tier, layout=layout)
+        source = build_notebook_source(course, nb, catalog=catalog, tier=tier,
+                                       layout=layout, owner=owner)
         target = f"{folder}/{nb.name}"
 
         if not dry_run:
