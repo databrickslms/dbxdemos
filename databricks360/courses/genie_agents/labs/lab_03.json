@@ -1,0 +1,20 @@
+{
+  "title": "Chat Mode vs Agent Mode",
+  "minutes": 15,
+  "graded": false,
+  "brief": [
+    "Route 10 Meridian questions to Chat or Agent mode, with a one-line justification each.",
+    "",
+    "Two of the ten are research questions disguised as metric questions: the phrasing names",
+    "a single measure, but answering usefully needs several. Spotting those is the point.",
+    "",
+    "Remember that Agent mode costs more, because it runs many queries per question. Routing",
+    "everything there is not a safe default; it is an expensive one."
+  ],
+  "checks": [],
+  "review": [
+    "Exactly two are identified as research questions in metric clothing.",
+    "Each justification says what the answer needs, not which mode sounds better.",
+    "At least one is routed to Chat specifically because Agent mode would cost more for no gain."
+  ]
+}

@@ -160,6 +160,11 @@ def check_lab(
         "YOU": f"{you}.",
         "YOU_INFO": f"{catalog}.information_schema" if catalog else "information_schema",
         "YOU_SCHEMA": f"'{schema}'",
+        # Lab 0 grades the installed dataset rather than something the learner built,
+        # so it needs to address the reference schema's metadata too.
+        "REF_INFO": (f"{ref.catalog}.information_schema" if ref.catalog
+                     else "information_schema"),
+        "REF_SCHEMA": f"'{ref.single_schema or 'core'}'",
     }
 
     warehouse = warehouse_id or next(iter(w.warehouses.list())).id

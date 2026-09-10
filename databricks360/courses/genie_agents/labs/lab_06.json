@@ -1,0 +1,47 @@
+{
+  "title": "Governance: Who Sees What",
+  "minutes": 25,
+  "graded": false,
+  "brief": [
+    "Given the Meridian access matrix — 4 personas across the core objects, one row filter",
+    "and four column masks — predict for 8 questions whether each user gets a full answer,",
+    "a masked answer, an empty answer, or a permission error. Then verify in the workspace.",
+    "",
+    "Two of the eight are the interesting cases: the CFO who correctly sees zero rows, and",
+    "the regional lead who correctly sees the firm-wide total. Predicting those two is how",
+    "you show you understood the module.",
+    "",
+    "An empty answer and a permission error are different outcomes, and Genie shows them",
+    "differently. Confusing the two is the most common mistake here.",
+    "",
+    "NOTE ON GRADING. The predictions are the work, and a person reads them. The checks",
+    "below only confirm the governance objects exist to be tested against — they need",
+    "notebook 05_governance, which requires privileges you may not have."
+  ],
+  "checks": [
+    {
+      "name": "Prerequisite: the PII columns exist to be masked",
+      "sql": [
+        "SELECT count(*) = 4 AS ok, concat(count(*), ' identifier columns found') AS detail",
+        "FROM {{REF_INFO}}.columns",
+        "WHERE table_schema = {{REF_SCHEMA}} AND table_name LIKE '%dim_client'",
+        "  AND column_name IN ('ssn_last4', 'email', 'dob', 'annual_income')"
+      ],
+      "hint": "Run notebook 02. These four are what the column masks cover."
+    },
+    {
+      "name": "Prerequisite: advisor region exists to filter rows on",
+      "sql": [
+        "SELECT count(DISTINCT region) = 4 AS ok, concat(count(DISTINCT region), ' regions') AS detail",
+        "FROM {{CORE}}dim_advisor"
+      ],
+      "hint": "NE, SE, MW and WEST. The row filter is applied on this column."
+    }
+  ],
+  "review": [
+    "All 8 predictions are made BEFORE verifying in the workspace.",
+    "The CFO's zero rows is predicted, and explained as a row filter rather than missing data.",
+    "The regional lead's firm-wide total is predicted, and the reason is given.",
+    "An empty answer and a permission error are distinguished, not conflated."
+  ]
+}

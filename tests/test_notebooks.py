@@ -727,3 +727,35 @@ def test_every_graded_lab_has_a_spec():
             assert len(spec["checks"]) >= 3, (
                 f"lab {n} is graded but has {len(spec['checks'])} checks — too few to be a grade"
             )
+
+
+def test_every_module_with_a_lab_has_a_spec():
+    """The course runs 0 through 17. A module whose lab has no spec gives the learner
+    a brief they cannot self-check and a reviewer no criteria."""
+    from importlib import resources
+
+    folder = resources.files(COURSE.package) / "labs"
+    have = {int(p.name[4:6]) for p in folder.iterdir() if p.name.endswith(".json")}
+    missing = sorted(set(range(0, 18)) - have)
+    assert not missing, f"no lab spec for module(s): {missing}"
+
+
+def test_agent_labs_name_an_agent_and_sql_labs_name_a_placeholder():
+    """A lab that grades an agent must say which one; a SQL lab must address either
+    the learner's schema or the reference, never a bare table name."""
+    import json
+    from importlib import resources
+
+    folder = resources.files(COURSE.package) / "labs"
+    for p in sorted(folder.iterdir()):
+        if not p.name.endswith(".json"):
+            continue
+        spec = json.loads(p.read_text(encoding="utf-8"))
+        for check in spec["checks"]:
+            if check.get("kind") == "agent":
+                assert spec.get("agent_title"), f"{p.name}: agent check without agent_title"
+            else:
+                sql = "\n".join(check["sql"])
+                assert any(t in sql for t in ("{{YOU", "{{CORE}}", "{{REF")), (
+                    f"{p.name}: {check['name']!r} addresses no schema placeholder"
+                )

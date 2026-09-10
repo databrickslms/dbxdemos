@@ -1,0 +1,101 @@
+{
+  "title": "Build the Meridian Dataset",
+  "minutes": 60,
+  "graded": true,
+  "brief": [
+    "Install the package and run notebooks 01, 02, 03 and 99 in order. Every one of the",
+    "validate rows must read PASS.",
+    "",
+    "Then read the data for twenty minutes. Open each table, read the column comments, and",
+    "run whatever occurs to you. Write down:",
+    "",
+    "  - three questions a business user might ask that this data could answer two",
+    "    different ways, and why",
+    "  - any column whose meaning you had to guess",
+    "  - the total value of assets Meridian manages, and how you decided which number",
+    "    that was",
+    "",
+    "Keep the sheet. You come back to it in Module 4, and the gap between what you noticed",
+    "now and what you can name then is the point of the exercise.",
+    "",
+    "The checks below confirm the dataset built correctly. They do not read your sheet.",
+    "The checks below confirm the dataset built correctly. They do not read your sheet."
+  ],
+  "checks": [
+    {
+      "name": "The twelve core objects exist",
+      "sql": [
+        "SELECT count(*) >= 12 AS ok, concat(count(*), ' core objects') AS detail",
+        "FROM {{REF_INFO}}.tables WHERE table_schema = {{REF_SCHEMA}}",
+        "  AND (table_name LIKE '%dim_%' OR table_name LIKE '%fct_%')"
+      ],
+      "hint": "Nine dimensions and three facts. Run notebooks 02 and 03."
+    },
+    {
+      "name": "dim_date covers both fiscal years",
+      "sql": [
+        "SELECT count(*) = 730 AS ok, concat(count(*), ' dates, expected 730') AS detail",
+        "FROM {{CORE}}dim_date"
+      ],
+      "hint": "Two fiscal years, 2024-10-01 to 2026-09-30."
+    },
+    {
+      "name": "Reporting dates are month-ends, not every day",
+      "sql": [
+        "SELECT count(*) = 24 AS ok, concat(count(*), ' reporting dates, expected 24') AS detail",
+        "FROM {{CORE}}dim_date WHERE is_reporting_date"
+      ],
+      "hint": "24 month-ends across two years. A reporting date is the last BUSINESS day."
+    },
+    {
+      "name": "The fiscal year starts in October",
+      "sql": [
+        "SELECT count(*) = 0 AS ok, concat(count(*), ' dates in the wrong fiscal year') AS detail",
+        "FROM {{CORE}}dim_date",
+        "WHERE date_key BETWEEN DATE'2025-10-01' AND DATE'2026-09-30' AND fiscal_year <> 'FY2026'"
+      ],
+      "hint": "FY2026 runs 2025-10-01 to 2026-09-30. Calendar year is not fiscal year here."
+    },
+    {
+      "name": "fct_aum_snapshot really is a daily snapshot",
+      "sql": [
+        "SELECT count(DISTINCT snapshot_date) > 500 AS ok,",
+        "       concat(count(DISTINCT snapshot_date), ' distinct dates') AS detail",
+        "FROM {{CORE}}fct_aum_snapshot"
+      ],
+      "hint": "One row per account per day. This is the trap the whole course keeps returning to."
+    },
+    {
+      "name": "Flows carry all six types, including exchanges",
+      "sql": [
+        "SELECT count(DISTINCT flow_type) = 6 AS ok,",
+        "       concat(count(DISTINCT flow_type), ' flow types') AS detail",
+        "FROM {{CORE}}fct_flows"
+      ],
+      "hint": "SUBSCRIPTION, REDEMPTION, EXCHANGE_IN, EXCHANGE_OUT, TRANSFER_IN, TRANSFER_OUT."
+    },
+    {
+      "name": "Both asset-class hierarchies are present",
+      "sql": [
+        "SELECT count(*) = 2 AS ok, concat(count(*), ' hierarchy columns') AS detail",
+        "FROM {{REF_INFO}}.columns",
+        "WHERE table_schema = {{REF_SCHEMA}} AND table_name LIKE '%dim_asset_class'",
+        "  AND column_name IN ('investment_class', 'regulatory_class')"
+      ],
+      "hint": "Two ways to roll up the same assets. Module 7 is where you pick one."
+    },
+    {
+      "name": "Portfolios and advisors generated deterministically",
+      "sql": [
+        "SELECT (SELECT count(*) FROM {{CORE}}dim_portfolio) = 4500 AS ok,",
+        "       concat((SELECT count(*) FROM {{CORE}}dim_portfolio), ' portfolios, expected 4500') AS detail"
+      ],
+      "hint": "Values derive from hash() not rand(), so your data is byte-identical to everyone else's."
+    }
+  ],
+  "review": [
+    "The sheet names three questions that the data answers two ways, with the reason.",
+    "The stated AUM total says which definition was chosen and why.",
+    "At least one guessed column is identified — there are several."
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "title": "Fiscal Calendars and Metric Definitions",
+  "minutes": 25,
+  "graded": false,
+  "brief": [
+    "In pairs, build a 10-term glossary for the Meridian wealth domain. Start with AUM,",
+    "return, net flows, quarter-end, and 'client'.",
+    "",
+    "Every term needs a named OWNER and an IMPLEMENTATION ROUTE — where the definition will",
+    "actually live: a metric view, a UC function, a curated view, or an instruction.",
+    "",
+    "Disagreements are the point of this exercise, not a problem with it. If you and your",
+    "partner agree on all ten immediately, you have probably chosen easy terms."
+  ],
+  "checks": [],
+  "review": [
+    "All ten terms have a named owner, not a team.",
+    "Each has an implementation route, and 'an instruction' is used sparingly.",
+    "At least one disagreement is recorded rather than resolved by whoever spoke louder.",
+    "'Client' is recognised as harder than it looks — household, relationship or account."
+  ]
+}

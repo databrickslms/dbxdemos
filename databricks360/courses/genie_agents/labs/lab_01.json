@@ -1,0 +1,27 @@
+{
+  "title": "Which Genie Do You Need?",
+  "minutes": 15,
+  "graded": false,
+  "brief": [
+    "You are given twelve real questions from a Meridian shared inbox. Sort each into one",
+    "of four buckets:",
+    "",
+    "  Genie One    — a business question over data that already exists",
+    "  Genie Agent  — needs a curated domain built first",
+    "  Genie Code   — someone needs help writing or fixing code",
+    "  Not a data question at all",
+    "",
+    "Then take the single hardest one and list every business definition that would have to",
+    "be settled before ANY tool could answer it correctly.",
+    "",
+    "Compare your list with a colleague's. The disagreement is the finding — if two people",
+    "who know the business cannot agree what a question means, no agent will do better."
+  ],
+  "checks": [],
+  "review": [
+    "Every question lands in a bucket, with a reason rather than a label.",
+    "At least one is correctly called 'not a data question'.",
+    "The definitions list for the hardest question names a disagreement, not just terms.",
+    "The learner noticed that 'needs a curated domain' is a judgement about effort, not a property of the question."
+  ]
+}

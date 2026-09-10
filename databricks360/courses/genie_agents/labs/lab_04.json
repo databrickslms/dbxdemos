@@ -1,0 +1,29 @@
+{
+  "title": "Diagnose the Compound AI System",
+  "minutes": 20,
+  "graded": false,
+  "agent_title": "uncurated",
+  "brief": [
+    "You get nine wrong answers from the uncurated Meridian agent, one per problem planted",
+    "in the dataset. For each, say WHICH STAGE FAILED and WHICH INPUT WAS MISSING.",
+    "",
+    "For example: 'summed a daily snapshot, because no join cardinality was declared', or",
+    "'returned nothing for California, because there is no entity matching on state'.",
+    "",
+    "Diagnosis only. You fix nothing today.",
+    "",
+    "Then compare your answers against the sheet you wrote in Lab 0. The gap between what",
+    "you noticed then and what you can name now is the exercise."
+  ],
+  "checks": [
+    {"kind": "agent", "name": "Prerequisite: the uncurated agent exists",
+     "count": "data_sources.tables", "at_least": 10,
+     "hint": "Run notebook 08_agents. It carries all 14 base objects, which is the point."}
+  ],
+  "review": [
+    "Each diagnosis names a stage AND a missing input, not just a wrong answer.",
+    "The daily-snapshot failure is identified as a grain problem, not an arithmetic one.",
+    "The empty California result is traced to value matching, not to missing data.",
+    "The learner compared against their Lab 0 sheet and said what they had missed."
+  ]
+}
