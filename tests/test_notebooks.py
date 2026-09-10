@@ -523,7 +523,9 @@ def test_agent_definitions_render_with_no_unresolved_placeholders():
 
     for label, kwargs in ALL_LAYOUTS:
         layout = resolve_layout(**kwargs)
-        values = {"CORE": layout.core, "REF": layout.ref, "STAGING": layout.staging}
+        from databricks360._documents import volume_path
+        values = {"CORE": layout.core, "REF": layout.ref, "STAGING": layout.staging,
+                  "VOLUME": volume_path(layout)}
         for name, raw in _definitions(COURSE).items():
             left = unresolved_placeholders(render_template(raw, values))
             assert not left, f"[{label}] {name}: unresolved {left}"
@@ -549,7 +551,7 @@ def test_agents_only_reference_objects_the_lab_creates():
 
     for name, raw in _definitions(COURSE).items():
         space = json.loads(render_template(raw, {}))
-        for table in space["data_sources"]["tables"]:
+        for table in space["data_sources"].get("tables", []):
             assert table["identifier"] in created, (
                 f"{name} references {table['identifier']}, which no notebook creates"
             )
@@ -863,3 +865,22 @@ def test_masks_do_not_carry_an_owner_bypass():
     sql = read_sql(COURSE, "05_governance.sql")
     for m in re.finditer(r"CREATE OR REPLACE FUNCTION \{\{CORE\}\}mask_\w+.*?;", sql, re.S):
         assert "{{OWNER}}" not in m.group(0), "a column mask should not exempt the owner"
+
+
+def test_the_curated_agent_attaches_the_documents_volume():
+    """Module 3 teaches Agent mode reading files beside tables. Forty documents in
+    a volume that no agent is attached to teaches nothing."""
+    import json
+    from importlib import resources
+    from databricks360._documents import volume_path
+
+    raw = (resources.files(COURSE.package) / "agents" / "curated.geniespace.json").read_text("utf-8")
+    space = json.loads(raw)
+    volumes = space["data_sources"].get("volumes")
+    assert volumes, "the curated agent attaches no volume"
+    assert volumes[0]["path"] == "{{VOLUME}}", "the volume path must be a placeholder"
+
+    layout = resolve_layout(schema="genie_agent", table_prefix="mfg_")
+    rendered = volume_path(layout)
+    assert rendered.startswith("/Volumes/"), rendered
+    assert rendered.endswith("documents"), rendered

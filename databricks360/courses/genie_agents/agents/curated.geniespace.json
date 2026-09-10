@@ -57,6 +57,17 @@
       {
         "identifier": "{{CORE}}mv_wealth_metrics"
       }
+    ],
+    "volumes": [
+      {
+        "path": "{{VOLUME}}",
+        "description": [
+          "Meridian internal documents: investment committee memos, advisor call notes and client\n",
+          "complaint resolutions. They record the decisions and arguments behind the numbers in the\n",
+          "tables - what AUM includes, whether exchanges count as redemptions, which return is\n",
+          "reported, and why fiscal and calendar quarters disagree.\n"
+        ]
+      }
     ]
   },
   "instructions": {

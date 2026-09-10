@@ -6,15 +6,25 @@
 # so there is nothing to click.
 #
 #   uncurated  — all 14 base objects, a long prose instruction block
-#   curated    — the 7 objects from Module 7, short instructions, example SQL
+#   curated    — the 7 objects from Module 7, short instructions, example SQL,
+#                and the documents volume attached for Agent mode
 #
 # Needs 04_staging, 06_curated and 07_metric_view to have been run.
 # ============================================================================
 
 import databricks360 as academy
 
+# ============================================================================
+# The documents first
+# Forty Meridian files - committee memos, advisor call notes, complaint
+# resolutions - written into the course volume. The curated agent attaches that
+# volume, so Agent mode can read them alongside the tables. Module 3 needs this.
+# ============================================================================
+
+academy.create_documents("genie-agents")
+
 # ----------------------------------------------------------------------------
-# Check first — nothing is created
+# Check the agents before creating them — nothing is created here
 # Reports any object an agent references that does not exist yet.
 # ----------------------------------------------------------------------------
 academy.create_agents("genie-agents", dry_run=True)

@@ -9,8 +9,15 @@ or the other.
 
     academy.create_documents('genie-agents')
 
-PDFs are written if fpdf is installed, plain text otherwise; both are readable by
-Agent mode, and the text fallback keeps this working with no extra dependency.
+PDFs are written if fpdf is installed, plain text otherwise; the text fallback
+keeps this working with no extra dependency.
+
+One caveat, measured rather than assumed: attaching the volume to an agent through
+`serialized_space` is accepted and round-trips, but on a Databricks Free Edition
+workspace Agent mode then reports that it has no document-search tool available.
+The files are there and the attachment is recorded; whether the agent can read
+them appears to depend on the feature being enabled for your workspace. Check
+before you build a session around it.
 """
 
 from __future__ import annotations
@@ -33,6 +40,16 @@ class DocumentRun:
     def __repr__(self) -> str:
         return (f"Wrote {self.written} {self.fmt} documents to {self.volume}\n"
                 f"  Attach this volume to a Genie Agent to use them in Agent mode.")
+
+
+def volume_path(layout) -> str:
+    """The /Volumes path for a course's documents volume, under a given layout.
+
+    layout.ref already carries the catalog when one was given, and ends in either
+    a table prefix ("...mfg_ref_") or a schema ("ref."). Either way the volume is
+    named by the same rule the notebooks use when they create it.
+    """
+    return "/Volumes/" + "/".join(p for p in (layout.ref + "documents").split(".") if p)
 
 
 def _corpus(course) -> list:
@@ -99,15 +116,11 @@ def create_documents(
                      create_catalog=False, create_schema=None, create_volume=False)
 
     if volume is None:
-        # layout.ref already carries the catalog when one was given, and ends in
-        # either a table prefix ("...mfg_ref_") or a schema ("ref."). The volume
-        # is named by the same rule the notebooks use when they create it.
-        ref = layout.ref
-        volume = ref + "documents" if ref.endswith("_") else ref + "documents"
-    elif catalog and not volume.startswith(f"{catalog}."):
-        volume = f"{catalog}.{volume}"
-    parts = [p for p in volume.split(".") if p]
-    base = "/Volumes/" + "/".join(parts)
+        base = volume_path(layout)
+    else:
+        if catalog and not volume.startswith(f"{catalog}."):
+            volume = f"{catalog}.{volume}"
+        base = "/Volumes/" + "/".join(p for p in volume.split(".") if p)
 
     pdf_ok = _render_pdf(docs[0]) is not None
     fmt = "PDF" if pdf_ok else "text"

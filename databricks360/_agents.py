@@ -162,7 +162,9 @@ def create_agents(
 
     layout = resolve(catalog=catalog, schema=schema, table_prefix=table_prefix,
                      create_catalog=False, create_schema=None, create_volume=False)
-    values = {"CORE": layout.core, "REF": layout.ref, "STAGING": layout.staging}
+    from ._documents import volume_path
+    values = {"CORE": layout.core, "REF": layout.ref, "STAGING": layout.staging,
+              "VOLUME": volume_path(layout)}
 
     spaces = {}
     for name, raw in defs.items():

@@ -29,7 +29,7 @@ from ._install import Installation, build_notebook_source, install
 from ._labs import CheckResult, LabResult, check_lab, lab
 from ._layout import Layout, resolve as resolve_layout
 
-__version__ = "0.12.2"
+__version__ = "0.13.0"
 __all__ = [
     "install",
     "create_agents",

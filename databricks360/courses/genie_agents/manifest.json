@@ -88,10 +88,10 @@
       "name": "08_agents",
       "sql": "08_agents.py",
       "language": "python",
-      "title": "08 · Genie Agents",
-      "intro": "Two Genie Agents created from definitions shipped with this package: one over all 14 base objects, one over the 7 curated ones. Ask both the same question and compare.\n\nUnlike the notebooks above, this one creates objects rather than data. An agent is metadata, so nothing runs on a warehouse until someone asks it a question.",
+      "title": "08 · Documents and Genie Agents",
+      "intro": "Forty Meridian documents into the course volume, then two Genie Agents created from definitions shipped with this package: one over all 14 base objects, one over the 7 curated ones with the documents volume attached. Ask both the same question and compare.\n\nUnlike the notebooks above, this one creates objects rather than data. An agent is metadata, so nothing runs on a warehouse until someone asks it a question.",
       "required": false,
-      "needed_for": "Modules 7, 13",
+      "needed_for": "Modules 3, 7, 13",
       "depends_on": "07_metric_view"
     },
     {
