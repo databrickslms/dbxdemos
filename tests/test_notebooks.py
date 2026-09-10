@@ -596,3 +596,47 @@ def test_agents_step_is_numbered_and_last_before_validate():
     assert agents.depends_on == "07_metric_view"
     assert not agents.required, "creating agents is not needed to have a working dataset"
     assert orders == sorted(orders)
+
+
+def test_every_aliased_column_reference_resolves():
+    """`s.as_of_date` shipped once against a table whose column is `snapshot_date`.
+    Nothing caught it, because the tests render SQL but never run it. This reads
+    the column names back out of the DDL and checks every alias.column reference.
+
+    The index over-approximates on purpose — every `AS alias` inside the CREATE
+    statement counts, including CTE aliases — so it produces no false positives
+    while still catching a name that appears nowhere in the statement.
+    """
+    import glob
+    from databricks360._catalog import read_sql
+
+    files = {nb.sql: read_sql(COURSE, nb.sql)
+             for nb in COURSE.notebooks if nb.language == "sql"}
+    joined = "\n".join(files.values())
+
+    index: dict = {}
+    for m in re.finditer(r"CREATE OR REPLACE (?:TABLE|VIEW) \{\{\w+\}\}(\w+)", joined):
+        rest = joined[m.end():]
+        nxt = re.search(r"\nCREATE OR REPLACE (?:TABLE|VIEW|FUNCTION)", rest)
+        block = rest[: nxt.start()] if nxt else rest
+        cols = {a.lower() for a in re.findall(r"\bAS\s+`?([a-z_][a-z_0-9]*)`?", block, re.I)}
+        cols |= {c.lower() for c in re.findall(r"^\s{2}([a-z_][a-z_0-9]*)\s+[A-Z]", block, re.M)}
+        cols |= {c.lower() for c in re.findall(r"^\s+([a-z_][a-z_0-9]*),\s*$", block, re.M)}
+        for tup in re.findall(r"\bAS\s+\w+\s*\(([^)]+)\)", block):
+            cols |= {c.strip().lower() for c in tup.split(",")
+                     if re.fullmatch(r"\s*[a-z_][a-z_0-9]*\s*", c)}
+        index.setdefault(m.group(1), set()).update(cols)
+
+    bad = []
+    for fname, sql in files.items():
+        for m in re.finditer(r"(?:FROM|JOIN)\s+\{\{\w+\}\}(\w+)\s+(?:AS\s+)?([a-z]{1,3})\b", sql):
+            table, alias = m.group(1), m.group(2)
+            if not index.get(table):
+                continue
+            stmt = sql[m.start():]
+            stmt = stmt[: stmt.index(";")] if ";" in stmt else stmt
+            for col in set(re.findall(r"\b" + alias + r"\.([a-z_][a-z_0-9]*)", stmt)):
+                if col.lower() not in index[table]:
+                    bad.append(f"{fname}: {alias}.{col} — {table} has no such column")
+
+    assert not bad, "unresolved column references:\n  " + "\n  ".join(sorted(set(bad)))

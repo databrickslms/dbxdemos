@@ -400,9 +400,9 @@ COMMENT 'Raw position-level feed from the custodian.';
 
 INSERT INTO {{STAGING}}fct_holdings_raw
 SELECT
-  concat('H', substr(s.account_id, 3), '-', date_format(s.as_of_date, 'yyyyMMdd')) AS holding_id,
+  concat('H', substr(s.account_id, 3), '-', date_format(s.snapshot_date, 'yyyyMMdd')) AS holding_id,
   s.account_id,
-  s.as_of_date,
+  s.snapshot_date AS as_of_date,
   concat('SEC-', substr(s.account_id, 4, 6)) AS security_id,
   concat('SEC-', substr(s.account_id, 4, 6)) AS security_name,
   concat('ISI-', substr(s.account_id, 4, 6)) AS isin,
@@ -422,10 +422,10 @@ SELECT
   cast(0 AS DECIMAL(9,4)) AS duration,
   cast(0 AS DECIMAL(9,6)) AS yield_pct,
   concat('RAT-', substr(s.account_id, 4, 6)) AS rating,
-  add_months(s.as_of_date, 24) AS maturity_date,
+  add_months(s.snapshot_date, 24) AS maturity_date,
   concat('CUS-', substr(s.account_id, 4, 6)) AS custodian,
   concat('SOU-', substr(s.account_id, 4, 6)) AS source_system,
-  cast(s.as_of_date AS TIMESTAMP) AS ingest_ts,
+  cast(s.snapshot_date AS TIMESTAMP) AS ingest_ts,
   concat('ETL-', substr(s.account_id, 4, 6)) AS etl_run_id,
   concat('REC-', substr(s.account_id, 4, 6)) AS record_hash,
   false AS is_deleted,
