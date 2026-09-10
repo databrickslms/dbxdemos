@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "databricks360"
-version = "0.14.1"
+version = "0.15.0"
 description = "Install Databricks course lab environments: notebooks, catalogs, datasets and governance objects."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -26,6 +26,7 @@ Issues = "https://github.com/databrickslms/dbxdemos/issues"
 
 [project.optional-dependencies]
 dev = ["pytest>=7"]
+documents = ["fpdf2>=2.7"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["databricks360"]

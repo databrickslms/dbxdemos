@@ -586,7 +586,11 @@ def test_python_notebooks_render_as_python():
         src = build_notebook_source(COURSE, nb, catalog=None, tier="small", layout=layout)
         if nb.language == "python":
             assert src.startswith(PY_HEADER), f"{nb.name} is not a python notebook"
-            compile(read_sql(COURSE, nb.sql), nb.sql, "exec")  # the source must be valid python
+            # Valid python once notebook magics are removed. %pip and %sh are how a
+            # notebook installs things, so they belong in the file and not in compile().
+            src = "\n".join("" if l.lstrip().startswith("%") else l
+                            for l in read_sql(COURSE, nb.sql).splitlines())
+            compile(src, nb.sql, "exec")
         else:
             assert src.startswith("-- Databricks notebook source")
 
@@ -969,3 +973,24 @@ def test_agent_only_labs_do_not_require_a_schema():
         spec = json.loads(p.read_text(encoding="utf-8"))
         if spec["checks"] and all(c.get("kind") == "agent" for c in spec["checks"]):
             assert spec.get("agent_title"), f"{p.name}: agent-only lab with no agent_title"
+
+
+def test_lab_briefs_do_not_compete_with_the_module_steps():
+    """The module carries the numbered steps; the spec carries the material. When
+    both carry instructions they drift, and a learner following step 1 lands on
+    whichever is staler."""
+    import json
+    from importlib import resources
+
+    folder = resources.files(COURSE.package) / "labs"
+    for p in sorted(folder.iterdir()):
+        if not p.name.endswith(".json"):
+            continue
+        spec = json.loads(p.read_text(encoding="utf-8"))
+        brief = "\n".join(spec["brief"])
+        assert "Step 1" not in brief, (
+            f"{p.name}: the brief carries numbered steps, which the module already has"
+        )
+        assert len(spec["brief"]) < 40, (
+            f"{p.name}: brief is {len(spec['brief'])} lines — it is a summary, not the lab"
+        )

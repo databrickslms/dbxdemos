@@ -110,6 +110,9 @@ def lab(course_id: str, number: int) -> None:
     print(f"Lab {number} — {spec['title']}   ({spec.get('minutes', '?')} min"
           f"{', GRADED' if spec.get('graded') else ''})")
     print()
+    print("  The numbered steps for this lab are in the course module. What follows is")
+    print("  a summary, the material the lab works on, and what a reviewer looks for.")
+    print()
     for line in spec["brief"]:
         print(f"  {line}")
     if spec.get("inputs"):

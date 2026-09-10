@@ -12,6 +12,13 @@
 # Needs 04_staging, 06_curated and 07_metric_view to have been run.
 # ============================================================================
 
+# Documents are written as PDFs, which needs fpdf2. Agent mode reads PDF and a few
+# other binary formats and nothing else, so this is a real requirement.
+%pip install fpdf2
+dbutils.library.restartPython()
+
+# COMMAND ----------
+
 import databricks360 as academy
 
 # ============================================================================

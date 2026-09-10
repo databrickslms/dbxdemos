@@ -9,8 +9,10 @@ or the other.
 
     academy.create_documents('genie-agents')
 
-PDFs are written if fpdf is installed, plain text otherwise; the text fallback
-keeps this working with no extra dependency.
+Documents are written as PDFs, which needs `fpdf2`. That is not optional in any
+useful sense: Agent mode reads PDF, JPG, PNG, TIFF, DOC, DOCX, PPT and PPTX, and
+nothing else. A plain-text fallback would put forty files in the volume that the
+feature ignores without saying so, which is worse than stopping.
 
 Attaching the volume is not enough to read it. A workspace admin must turn on the
 preview **Analyze Files in Volumes with Genie Agents** from the Previews page;
@@ -128,12 +130,17 @@ def create_documents(
             volume = f"{catalog}.{volume}"
         base = "/Volumes/" + "/".join(p for p in volume.split(".") if p)
 
-    pdf_ok = _render_pdf(docs[0]) is not None
-    fmt = "PDF" if pdf_ok else "text"
+    if _render_pdf(docs[0]) is None:
+        raise ImportError(
+            "fpdf2 is needed to write the documents as PDFs.\n"
+            "    %pip install fpdf2\n"
+            "Agent mode reads PDF, JPG, PNG, TIFF, DOC, DOCX, PPT and PPTX, and nothing "
+            "else. Writing plain text instead would put forty files in the volume that "
+            "the agent silently ignores, so this stops rather than doing that."
+        )
     written = 0
     for doc in docs:
-        body = _render_pdf(doc) if pdf_ok else _render_text(doc)
-        name = doc["file"] if pdf_ok else doc["file"].replace(".pdf", ".txt")
-        w.files.upload(f"{base}/{name}", io.BytesIO(body), overwrite=overwrite)
+        w.files.upload(f"{base}/{doc['file']}", io.BytesIO(_render_pdf(doc)),
+                       overwrite=overwrite)
         written += 1
-    return DocumentRun(volume=base, written=written, fmt=fmt)
+    return DocumentRun(volume=base, written=written, fmt="PDF")
