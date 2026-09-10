@@ -74,7 +74,10 @@
           "unsettled and cancelled instructions, and gives exchanges a sign of 0 so they never count\n",
           "as sales or redemptions.\n",
           "\n",
-          "Say which period and currency every figure covers.\n"
+          "Say which period and currency every figure covers.\n",
+          "\n",
+          "When querying mv_wealth_metrics, a measure must be wrapped in MEASURE(),\n",
+          "for example MEASURE(`AUM`). Dimensions are used bare.\n"
         ]
       }
     ],
@@ -85,7 +88,7 @@
           "What was our AUM in California at the end of last year?"
         ],
         "sql": [
-          "SELECT `State`, `AUM`\n",
+          "SELECT `State`, MEASURE(`AUM`) AS aum_usd\n",
           "FROM {{CORE}}mv_wealth_metrics\n",
           "WHERE `State` = 'CA'\n",
           "  AND `Reporting Date` = (\n",
@@ -113,10 +116,10 @@
           "How does AUM split by asset class?"
         ],
         "sql": [
-          "SELECT `Asset Class`, `AUM`\n",
+          "SELECT `Asset Class`, MEASURE(`AUM`) AS aum_usd\n",
           "FROM {{CORE}}mv_wealth_metrics\n",
           "GROUP BY ALL\n",
-          "ORDER BY `AUM` DESC;\n"
+          "ORDER BY aum_usd DESC;\n"
         ]
       }
     ],
@@ -186,7 +189,7 @@
           {
             "format": "SQL",
             "content": [
-              "SELECT `State`, `AUM`\n",
+              "SELECT `State`, MEASURE(`AUM`) AS aum_usd\n",
               "FROM {{CORE}}mv_wealth_metrics\n",
               "WHERE `State` = 'CA'\n",
               "  AND `Reporting Date` = (\n",

@@ -14,7 +14,8 @@ WITH METRICS
 LANGUAGE YAML
 COMMENT 'Headline wealth metrics. Definitive source for AUM, assets under advisement and net flows.'
 AS $$
-version: 0.1
+# synonyms, display_name and format require YAML specification 1.1.
+version: 1.1
 
 source: {{CORE}}vw_aum_reporting
 
@@ -24,7 +25,7 @@ joins:
     on: source.client_id = client.client_id
   - name: advisor
     source: {{CORE}}dim_advisor
-    on: client.advisor_id = advisor.advisor_id
+    on: source.advisor_id = advisor.advisor_id
   - name: asset_class
     source: {{CORE}}dim_asset_class
     on: source.asset_class_code = asset_class.asset_class_code
@@ -67,15 +68,30 @@ measures:
   - name: AUM
     expr: SUM(CASE WHEN source.is_discretionary THEN source.managed_value_usd ELSE 0 END)
     synonyms: [assets under management, discretionary aum, managed assets]
-    format: currency
+    format:
+      type: currency
+      currency_code: USD
+      decimal_places:
+        type: exact
+        places: 0
   - name: Assets Under Advisement
     expr: SUM(source.total_advised_value_usd)
     synonyms: [aua, advised assets, total assets]
-    format: currency
+    format:
+      type: currency
+      currency_code: USD
+      decimal_places:
+        type: exact
+        places: 0
   - name: Held Away Assets
     expr: SUM(source.held_away_value_usd)
     synonyms: [held away, unmanaged assets]
-    format: currency
+    format:
+      type: currency
+      currency_code: USD
+      decimal_places:
+        type: exact
+        places: 0
   - name: Account Count
     expr: COUNT(DISTINCT source.account_id)
     synonyms: [accounts, funded accounts]
@@ -85,25 +101,32 @@ measures:
   - name: Average Account Value
     expr: SUM(source.managed_value_usd) / NULLIF(COUNT(DISTINCT source.account_id), 0)
     synonyms: [average balance, average account size]
-    format: currency
+    format:
+      type: currency
+      currency_code: USD
+      decimal_places:
+        type: exact
+        places: 0
 $$;
 
 
 -- ----------------------------------------------------------------------------
 -- Verify — the same measure, three groupings, no redefinition
+-- A measure column must be wrapped in MEASURE(): the metric view stores the
+-- definition, and MEASURE() is what asks for it to be evaluated.
 -- ----------------------------------------------------------------------------
-SELECT `Fiscal Quarter`, `AUM`, `Assets Under Advisement`
+SELECT `Fiscal Quarter`, MEASURE(`AUM`), MEASURE(`Assets Under Advisement`)
 FROM {{CORE}}mv_wealth_metrics
 GROUP BY ALL
 ORDER BY `Fiscal Quarter`;
 
-SELECT `Asset Class`, `AUM`, `Account Count`
+SELECT `Asset Class`, MEASURE(`AUM`), MEASURE(`Account Count`)
 FROM {{CORE}}mv_wealth_metrics
 GROUP BY ALL
-ORDER BY `AUM` DESC;
+ORDER BY MEASURE(`AUM`) DESC;
 
-SELECT `Region`, `Client Segment`, `AUM`
+SELECT `Region`, `Client Segment`, MEASURE(`AUM`)
 FROM {{CORE}}mv_wealth_metrics
 GROUP BY ALL
-ORDER BY `AUM` DESC
+ORDER BY MEASURE(`AUM`) DESC
 LIMIT 20;

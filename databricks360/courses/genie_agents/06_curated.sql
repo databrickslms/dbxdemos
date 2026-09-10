@@ -32,7 +32,11 @@ SELECT
   cast((s.market_value_local + s.held_away_value_local) * fx.usd_rate
        AS DECIMAL(18,2))                                            AS total_advised_value_usd,
   coalesce(p.is_discretionary, true)                                AS is_discretionary,
-  coalesce(p.asset_class_code, f.asset_class_code)                   AS asset_class_code
+  coalesce(p.asset_class_code, f.asset_class_code)                   AS asset_class_code,
+  -- Carried here so a metric view can join the advisor directly: a metric view's
+  -- `on:` may reference the source, not another join, so client -> advisor cannot
+  -- be chained. Only the key travels; the client's own attributes stay behind.
+  c.advisor_id
 FROM {{CORE}}fct_aum_snapshot s
 JOIN {{CORE}}dim_date d
   ON d.date_key = s.snapshot_date AND d.is_reporting_date
@@ -40,19 +44,16 @@ JOIN {{CORE}}dim_fx_rate fx
   ON fx.currency = s.local_currency AND fx.rate_date = s.snapshot_date
 JOIN {{CORE}}dim_account a
   ON a.account_id = s.account_id
+JOIN {{CORE}}dim_client c
+  ON c.client_id = a.client_id
 LEFT JOIN {{CORE}}dim_portfolio p ON p.portfolio_id = s.portfolio_id
 LEFT JOIN {{CORE}}dim_fund      f ON f.fund_id      = s.fund_id;
 
-ALTER VIEW {{CORE}}vw_aum_reporting ALTER COLUMN managed_value_usd
-  COMMENT 'Assets Meridian manages, in USD. This is what "AUM" means at Meridian unless someone says otherwise.';
-ALTER VIEW {{CORE}}vw_aum_reporting ALTER COLUMN held_away_value_usd
-  COMMENT 'Assets Meridian reports on but does not manage. Excluded from AUM. Include only when the question says "advised" or "AUA".';
-ALTER VIEW {{CORE}}vw_aum_reporting ALTER COLUMN total_advised_value_usd
-  COMMENT 'Managed plus held-away. This is assets under advisement, not AUM. The two differ by roughly a fifth of accounts.';
-ALTER VIEW {{CORE}}vw_aum_reporting ALTER COLUMN as_of_date
-  COMMENT 'Month-end reporting date, the last business day of the month. Not the last calendar day.';
-ALTER VIEW {{CORE}}vw_aum_reporting ALTER COLUMN is_discretionary
-  COMMENT 'True where Meridian has investment discretion. Advisory-only mandates are excluded from discretionary AUM.';
+COMMENT ON COLUMN {{CORE}}vw_aum_reporting.managed_value_usd IS 'Assets Meridian manages, in USD. This is what "AUM" means at Meridian unless someone says otherwise.';
+COMMENT ON COLUMN {{CORE}}vw_aum_reporting.held_away_value_usd IS 'Assets Meridian reports on but does not manage. Excluded from AUM. Include only when the question says "advised" or "AUA".';
+COMMENT ON COLUMN {{CORE}}vw_aum_reporting.total_advised_value_usd IS 'Managed plus held-away. This is assets under advisement, not AUM. The two differ by roughly a fifth of accounts.';
+COMMENT ON COLUMN {{CORE}}vw_aum_reporting.as_of_date IS 'Month-end reporting date, the last business day of the month. Not the last calendar day.';
+COMMENT ON COLUMN {{CORE}}vw_aum_reporting.is_discretionary IS 'True where Meridian has investment discretion. Advisory-only mandates are excluded from discretionary AUM.';
 
 
 -- ============================================================================
@@ -87,12 +88,9 @@ JOIN {{CORE}}dim_account a
   ON a.account_id = fl.account_id
 WHERE fl.status = 'SETTLED';
 
-ALTER VIEW {{CORE}}vw_net_flows ALTER COLUMN external_sign
-  COMMENT 'Multiply amount_usd by this and sum to get net new money: +1 for subscriptions and transfers in, -1 for redemptions and transfers out, 0 for exchanges.';
-ALTER VIEW {{CORE}}vw_net_flows ALTER COLUMN is_internal
-  COMMENT 'True for exchanges between Meridian products. These are not sales or redemptions and must not be counted as either.';
-ALTER VIEW {{CORE}}vw_net_flows ALTER COLUMN as_of_date
-  COMMENT 'Settlement date, which is when the money actually moved. Trade date is when the instruction was placed and is usually one to three days earlier.';
+COMMENT ON COLUMN {{CORE}}vw_net_flows.external_sign IS 'Multiply amount_usd by this and sum to get net new money: +1 for subscriptions and transfers in, -1 for redemptions and transfers out, 0 for exchanges.';
+COMMENT ON COLUMN {{CORE}}vw_net_flows.is_internal IS 'True for exchanges between Meridian products. These are not sales or redemptions and must not be counted as either.';
+COMMENT ON COLUMN {{CORE}}vw_net_flows.as_of_date IS 'Settlement date, which is when the money actually moved. Trade date is when the instruction was placed and is usually one to three days earlier.';
 
 
 -- ============================================================================
@@ -162,7 +160,9 @@ CREATE OR REPLACE FUNCTION {{CORE}}to_usd(
 RETURNS DECIMAL(18,2)
 COMMENT 'Converts to USD using the rate as of the given date. Owner: FP&A.'
 RETURN
-  amount * (SELECT usd_rate FROM {{CORE}}dim_fx_rate
+  -- max() rather than a bare column: a correlated scalar subquery must be
+  -- aggregated, and there is at most one rate per currency per date anyway.
+  amount * (SELECT max(usd_rate) FROM {{CORE}}dim_fx_rate
             WHERE currency = from_currency AND rate_date = on_date);
 
 -- Resolve a Meridian fiscal period label to its date range.

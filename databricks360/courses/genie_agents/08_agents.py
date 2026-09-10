@@ -21,8 +21,9 @@ academy.create_agents("genie-agents", dry_run=True)
 
 # ============================================================================
 # Create both agents
-# Re-running creates a second pair rather than updating the first, so remove
-# the old ones from the Genie UI if you run this twice.
+# Refuses to run if an agent of the same name already exists, rather than
+# quietly making a second one. Delete the old pair from the Genie UI first, or
+# pass allow_duplicates=True if you really want both.
 # ============================================================================
 
 academy.create_agents("genie-agents")

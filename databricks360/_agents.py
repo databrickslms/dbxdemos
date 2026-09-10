@@ -57,6 +57,24 @@ class AgentRun:
         return "\n".join(lines)
 
 
+def _sorted_space(node):
+    """The API rejects any unsorted list in the payload — tables by identifier,
+    everything else by id. Sorting here rather than in the JSON keeps the authored
+    files readable, and is the only correct place for tables: the layout prefix
+    decides their order, not the order they were written in.
+    """
+    if isinstance(node, dict):
+        return {k: _sorted_space(v) for k, v in node.items()}
+    if isinstance(node, list):
+        items = [_sorted_space(v) for v in node]
+        if items and all(isinstance(i, dict) for i in items):
+            for key in ("identifier", "id"):
+                if all(key in i for i in items):
+                    return sorted(items, key=lambda i: i[key])
+        return items
+    return node
+
+
 def _definitions(course) -> dict:
     """Every agent definition shipped with the course, by name."""
     try:
@@ -91,6 +109,7 @@ def create_agents(
     warehouse_id: str | None = None,
     only: str | None = None,
     dry_run: bool = False,
+    allow_duplicates: bool = False,
 ) -> AgentRun:
     """Create the Genie Agents a course's modules need.
 
@@ -148,7 +167,7 @@ def create_agents(
         left = unresolved_placeholders(rendered)
         if left:
             raise ValueError(f"{name}: unresolved placeholders {left}")
-        spaces[name] = json.loads(rendered)
+        spaces[name] = _sorted_space(json.loads(rendered))
 
     # An agent pointed at a table that does not exist fails on every question, and
     # the failure reads as a Genie problem rather than a notebook that was skipped.
@@ -162,6 +181,18 @@ def create_agents(
                 gone.append(t["identifier"])
         if gone:
             missing[name] = gone
+
+    # Creating a second agent with the same title is silently allowed by the API,
+    # which renames it with a timestamp. That leaves a confusing pile behind, and a
+    # partly-failed run is the usual way it happens.
+    existing = {s.get("title") for s in
+                w.api_client.do("GET", "/api/2.0/genie/spaces").get("spaces", [])}
+    clashes = [t for t, _ in (_titles(course_id, n) for n in spaces) if t in existing]
+    if clashes and not allow_duplicates:
+        raise ValueError(
+            "already exists: " + ", ".join(clashes)
+            + ". Delete them first, or pass allow_duplicates=True."
+        )
 
     run = AgentRun(course_id=course_id, catalog=catalog, warehouse_id=warehouse_id,
                    created=[], missing=missing)
