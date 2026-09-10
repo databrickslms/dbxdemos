@@ -148,6 +148,22 @@ name — `current_catalog()` exists by definition, so there would be nothing to 
 Passing `schema` assumes you cannot create that schema either, since that is the
 reason to reach for it. Override with `create_schema=True` if you can.
 
+### Which of these have actually been run
+
+The spoiler sweep renders all six shapes at build time, but rendering is not running.
+These have been executed end to end against a real workspace:
+
+| Layout | Executed |
+|---|---|
+| Course default — one schema, `mfg_` prefix | all nine notebooks |
+| Multi-schema — `core` / `ref` / `staging`, no prefix | all nine notebooks |
+| Single schema, named catalog, no prefix | schemas + dimensions |
+| `create_catalog=True` | catalog, schemas + dimensions |
+
+`scripts/run_lab.py` is what does it — it executes a notebook's SQL against a workspace and
+reports the first failure in each file, which is how six bugs in `06_curated` and
+`07_metric_view` were found after they had shipped.
+
 ### One schema shared with other content
 
 If your schema also holds other things, prefix the object names so their

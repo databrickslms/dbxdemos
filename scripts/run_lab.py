@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -59,6 +60,9 @@ def main() -> None:
     ap.add_argument("--tier", default="small")
     ap.add_argument("--warehouse-id")
     ap.add_argument("--bare", action="store_true")
+    ap.add_argument("--create-catalog", action="store_true")
+    ap.add_argument("--max-wait", type=int, default=3600,
+                    help="seconds to wait for one long statement")
     ap.add_argument("--stop-on-error", action="store_true")
     args = ap.parse_args()
 
@@ -82,7 +86,8 @@ def main() -> None:
         schema = args.schema or course.default_schema
         prefix = args.table_prefix or course.default_table_prefix
     layout = resolve(catalog=args.catalog, schema=schema, table_prefix=prefix,
-                     create_catalog=False, create_schema=None, create_volume=False)
+                     create_catalog=args.create_catalog, create_schema=None,
+                     create_volume=False)
     values = {
         "CATALOG": layout.catalog or "current_catalog()",
         "INFO_SCHEMA": ("information_schema" if layout.catalog is None
@@ -98,6 +103,7 @@ def main() -> None:
     if not wanted:
         sys.exit("nothing selected — name notebooks or pass --all (see --list)")
 
+    max_wait = args.max_wait
     failures = 0
     for nb in wanted:
         sql = render_template(read_sql(course, nb.sql), values)
@@ -112,6 +118,17 @@ def main() -> None:
             r = w.statement_execution.execute_statement(
                 warehouse_id=warehouse, statement=stmt, wait_timeout="50s",
             )
+            # 50s is the API's ceiling for an inline wait. A large-tier build runs
+            # far longer than that, and treating "still running" as a failure is how
+            # a working notebook gets reported as broken.
+            waited = 0
+            while r.status.state in (StatementState.PENDING, StatementState.RUNNING):
+                time.sleep(10)
+                waited += 10
+                r = w.statement_execution.get_statement(r.statement_id)
+                if waited >= max_wait:
+                    print(f"    {i:3}. still running after {waited}s — giving up on the wait")
+                    break
             state = r.status.state
             if state == StatementState.SUCCEEDED:
                 print(f"    {i:3}. ok")
