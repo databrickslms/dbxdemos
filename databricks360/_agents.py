@@ -110,12 +110,15 @@ def create_agents(
     only: str | None = None,
     dry_run: bool = False,
     allow_duplicates: bool = False,
+    title_suffix: str | None = None,
 ) -> AgentRun:
     """Create the Genie Agents a course's modules need.
 
         create_agents('genie-agents')                  # both, current catalog
         create_agents('genie-agents', dry_run=True)    # check, create nothing
         create_agents('genie-agents', only='curated')  # just one
+        create_agents('genie-agents', schema='large_tier',
+                      title_suffix='(large tier)')     # Module 13's agent
 
     Object names render from the same {{CORE}}/{{STAGING}} placeholders as the
     notebooks, so the agents follow whichever layout the lab was installed with.
@@ -187,7 +190,11 @@ def create_agents(
     # partly-failed run is the usual way it happens.
     existing = {s.get("title") for s in
                 w.api_client.do("GET", "/api/2.0/genie/spaces").get("spaces", [])}
-    clashes = [t for t, _ in (_titles(course_id, n) for n in spaces) if t in existing]
+    def titled(name):
+        title, description = _titles(course_id, name)
+        return (f"{title} {title_suffix}" if title_suffix else title), description
+
+    clashes = [titled(n)[0] for n in spaces if titled(n)[0] in existing]
     if clashes and not allow_duplicates:
         raise ValueError(
             "already exists: " + ", ".join(clashes)
@@ -200,7 +207,7 @@ def create_agents(
         return run
 
     for name, space in spaces.items():
-        title, description = _titles(course_id, name)
+        title, description = titled(name)
         created = w.api_client.do("POST", "/api/2.0/genie/spaces", body={
             "warehouse_id": warehouse_id,
             "title": title,
