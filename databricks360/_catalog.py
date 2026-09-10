@@ -14,8 +14,9 @@ class Notebook:
 
     order: int
     name: str
-    sql: str
+    sql: str          # source filename; .sql unless language says otherwise
     title: str
+    language: str = "sql"
     intro: str = ""
     requires_admin: bool = False
     slow: bool = False
@@ -76,6 +77,7 @@ def _load(pkg_name: str) -> Course:
                 name=n["name"],
                 sql=n["sql"],
                 title=n["title"],
+                language=n.get("language", "sql"),
                 intro=n.get("intro", ""),
                 requires_admin=n.get("requires_admin", False),
                 slow=n.get("slow", False),

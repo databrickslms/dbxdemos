@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -192,7 +193,7 @@ def test_dry_run_install_needs_no_workspace():
     result = install("genie-agents", dry_run=True, catalog="mfg", tier="small")
     assert result.catalog == "mfg"
     assert len(result.notebooks) == len(COURSE.notebooks)
-    assert [n.order for n in result.notebooks] == [1, 2, 3, 4, 5, 6, 7, 99]
+    assert [n.order for n in result.notebooks] == [1, 2, 3, 4, 5, 6, 7, 8, 99]
     rendered = repr(result)
     assert "Run these" in rendered
     assert "slow" not in rendered, "no notebook is slow at the small tier any more"
@@ -510,3 +511,88 @@ def test_tier_descriptions_do_not_editorialise():
     for name, tier in COURSE.tiers.items():
         for phrase in ["on purpose", "deliberate", "flaw"]:
             assert phrase not in tier.description.lower(), f"tier {name}: {tier.description}"
+
+
+# ── Genie Agent definitions ──────────────────────────────────────────────────
+# The agents are config, not code, so nothing type-checks them. These tests are
+# the only thing standing between a typo and an agent that fails every question.
+
+def test_agent_definitions_render_with_no_unresolved_placeholders():
+    from databricks360._agents import _definitions
+    from databricks360._notebook import render_template, unresolved_placeholders
+
+    for label, kwargs in ALL_LAYOUTS:
+        layout = resolve_layout(**kwargs)
+        values = {"CORE": layout.core, "REF": layout.ref, "STAGING": layout.staging}
+        for name, raw in _definitions(COURSE).items():
+            left = unresolved_placeholders(render_template(raw, values))
+            assert not left, f"[{label}] {name}: unresolved {left}"
+
+
+def test_agents_only_reference_objects_the_lab_creates():
+    """An agent pointed at an object no notebook creates fails on every question,
+    and the failure reads as a Genie problem rather than a missing table."""
+    import json
+    from databricks360._agents import _definitions
+    from databricks360._catalog import read_sql
+    from databricks360._notebook import render_template
+
+    created = set()
+    for nb in COURSE.notebooks:
+        if nb.language != "sql":
+            continue
+        for m in re.finditer(
+            r"CREATE (?:OR REPLACE )?(?:VIEW|TABLE)\s+\{\{(\w+)\}\}(\w+)",
+            read_sql(COURSE, nb.sql),
+        ):
+            created.add(f"{{{{{m.group(1)}}}}}{m.group(2)}")
+
+    for name, raw in _definitions(COURSE).items():
+        space = json.loads(render_template(raw, {}))
+        for table in space["data_sources"]["tables"]:
+            assert table["identifier"] in created, (
+                f"{name} references {table['identifier']}, which no notebook creates"
+            )
+
+
+def test_agent_sql_only_references_columns_that_exist():
+    """Catches an invented column in a snippet or example query."""
+    import json
+    from databricks360._agents import _definitions
+    from databricks360._catalog import read_sql
+    from databricks360._notebook import render_template
+
+    curated_sql = read_sql(COURSE, "06_curated.sql") + read_sql(COURSE, "07_metric_view.sql")
+    suspects = ["signed_amount_usd", "net_amount_usd", "aum_usd_total", "flow_amount"]
+
+    for name, raw in _definitions(COURSE).items():
+        blob = render_template(raw, {})
+        for bogus in suspects:
+            assert bogus not in blob, f"{name} references {bogus!r}, which does not exist"
+        if name == "curated":
+            for real in ["amount_usd", "external_sign", "is_internal",
+                         "is_discretionary", "managed_value_usd", "total_advised_value_usd"]:
+                if real in blob:
+                    assert real in curated_sql, f"{name}: {real!r} is not a curated-view column"
+
+
+def test_python_notebooks_render_as_python():
+    from databricks360._notebook import PY_HEADER
+
+    layout = resolve_layout(schema="genie_agent", table_prefix="mfg_")
+    for nb in COURSE.notebooks:
+        src = build_notebook_source(COURSE, nb, catalog=None, tier="small", layout=layout)
+        if nb.language == "python":
+            assert src.startswith(PY_HEADER), f"{nb.name} is not a python notebook"
+            compile(read_sql(COURSE, nb.sql), nb.sql, "exec")  # the source must be valid python
+        else:
+            assert src.startswith("-- Databricks notebook source")
+
+
+def test_agents_step_is_numbered_and_last_before_validate():
+    orders = [n.order for n in COURSE.notebooks]
+    agents = next(n for n in COURSE.notebooks if n.name == "08_agents")
+    assert agents.order == 8
+    assert agents.depends_on == "07_metric_view"
+    assert not agents.required, "creating agents is not needed to have a working dataset"
+    assert orders == sorted(orders)

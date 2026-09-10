@@ -12,7 +12,9 @@ from dataclasses import dataclass
 
 from ._catalog import Course, Notebook, read_sql
 from ._layout import Layout, resolve as resolve_layout, schema_list_sql, setup_ddl
-from ._notebook import render_template, sql_to_notebook, unresolved_placeholders
+from ._notebook import (
+    py_to_notebook, render_template, sql_to_notebook, unresolved_placeholders,
+)
 
 
 @dataclass
@@ -141,9 +143,12 @@ def build_notebook_source(
     if course.tiers:
         values.update(course.tiers[tier].values)
 
-    sql = render_template(read_sql(course, notebook.sql), values)
+    body = render_template(read_sql(course, notebook.sql), values)
     intro = render_template(notebook.intro, values)
-    source = sql_to_notebook(sql, title=notebook.title, intro=intro or None)
+    if notebook.language == "python":
+        source = py_to_notebook(body, title=notebook.title, intro=intro or None)
+    else:
+        source = sql_to_notebook(body, title=notebook.title, intro=intro or None)
 
     leftover = unresolved_placeholders(source)
     if leftover:
@@ -233,7 +238,7 @@ def install(
                 path=target,
                 content=base64.b64encode(source.encode("utf-8")).decode("ascii"),
                 format=ImportFormat.SOURCE,
-                language=Language.SQL,
+                language=Language.PYTHON if nb.language == "python" else Language.SQL,
                 overwrite=overwrite,
             )
 

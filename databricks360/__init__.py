@@ -12,22 +12,32 @@ Run inside a Databricks notebook:
 `install` writes the lab notebooks into your workspace. You then run them in
 order. Nothing is executed for you: generating the data is real work on your
 warehouse, and watching it happen is part of the lesson.
+
+    academy.create_agents('genie-agents')
+
+`create_agents` creates the course's Genie Agents from definitions shipped with
+the package. Agents are metadata rather than data, so this one does act on your
+workspace — but nothing runs a query until someone asks the agent something.
 """
 
 from __future__ import annotations
 
+from ._agents import AgentRun, CreatedAgent, create_agents
 from ._catalog import Course, available_courses, get_course
 from ._install import Installation, build_notebook_source, install
 from ._layout import Layout, resolve as resolve_layout
 
-__version__ = "0.7.1"
+__version__ = "0.8.0"
 __all__ = [
     "install",
+    "create_agents",
     "list_courses",
     "get_course",
     "available_courses",
     "build_notebook_source",
+    "AgentRun",
     "Course",
+    "CreatedAgent",
     "Installation",
     "Layout",
     "resolve_layout",

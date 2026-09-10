@@ -55,8 +55,28 @@ Installed 'genie-agents' → /Workspace/Users/you@corp.com/databricks360/genie-a
   Run these in order:
     1. 01_catalog_and_schemas
     2. 02_dimensions
-    3. 03_facts   (slow)
+    3. 03_facts
 ```
+
+## Genie Agents
+
+Courses that need Genie Agents ship them as `serialized_space` definitions, so an
+agent is never built by hand:
+
+```python
+academy.create_agents('genie-agents', dry_run=True)   # check, create nothing
+academy.create_agents('genie-agents')                 # create them
+```
+
+Notebook `08_agents` does exactly this, so it is usually easier to run that in
+order with the rest. Object names come from the same layout as the notebooks, so
+the agents follow whichever catalog and schema you installed into.
+
+This is the one call that creates something without you running a notebook. It is
+still cheap: an agent is metadata, and nothing touches a warehouse until someone
+asks it a question. It refuses to create an agent whose tables do not exist yet,
+because an agent pointed at a missing table fails on every question and the
+failure looks like a Genie problem rather than a notebook you skipped.
 
 ### Options
 

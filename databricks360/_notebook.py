@@ -13,6 +13,13 @@ import re
 CELL_DELIMITER = "-- COMMAND ----------"
 SQL_HEADER = "-- Databricks notebook source"
 
+PY_CELL_DELIMITER = "# COMMAND ----------"
+PY_HEADER = "# Databricks notebook source"
+
+# Python lab files mark a cell break with a line of hashes, the same way the SQL
+# files use a banner. Keeps the .py file runnable on its own.
+_PY_BANNER = re.compile(r"^# ={2,}\s*$")
+
 # A run of dashes at least this long marks a section heading in the SQL files.
 _BANNER = re.compile(r"^-- =={2,}\s*$")
 
@@ -105,3 +112,55 @@ def render_template(sql: str, values: dict[str, str]) -> str:
 def unresolved_placeholders(text: str) -> list[str]:
     """Any {{TOKEN}} left after substitution — a bug worth failing loudly on."""
     return sorted(set(re.findall(r"\{\{([A-Z0-9_]+)\}\}", text)))
+
+
+def _py_md_cell(lines: list[str]) -> str:
+    body = "\n".join(f"# MAGIC {line}" if line else "# MAGIC" for line in lines)
+    return f"# MAGIC %md\n{body}"
+
+
+def split_py_sections(src: str) -> list[tuple[str, str]]:
+    """Split a lab .py file into (title, body) on its `# ====` banners."""
+    lines = src.splitlines()
+    sections: list[tuple[str, list[str]]] = []
+    title, body = "", []
+    i = 0
+    while i < len(lines):
+        if _PY_BANNER.match(lines[i]):
+            j = i + 1
+            header: list[str] = []
+            while j < len(lines) and not _PY_BANNER.match(lines[j]):
+                header.append(re.sub(r"^#\s?", "", lines[j]))
+                j += 1
+            if j < len(lines):
+                if body or title:
+                    sections.append((title, body))
+                title, body = "\n".join(header).strip(), []
+                i = j + 1
+                continue
+        body.append(lines[i])
+        i += 1
+    if body or title:
+        sections.append((title, body))
+    return [(t, "\n".join(b).strip()) for t, b in sections]
+
+
+def py_to_notebook(src: str, *, title: str, intro: str | None = None) -> str:
+    """Build Databricks Python notebook source from a lab .py file."""
+    cells: list[str] = []
+    heading = [f"# {title}"]
+    if intro:
+        heading += ["", *intro.splitlines()]
+    cells.append(_py_md_cell(heading))
+
+    for section_title, body in split_py_sections(src):
+        if section_title:
+            first, *rest = section_title.splitlines()
+            md = [f"## {first.strip()}"]
+            if rest:
+                md += ["", *[line.strip() for line in rest]]
+            cells.append(_py_md_cell(md))
+        if body:
+            cells.append(body)
+
+    return f"{PY_HEADER}\n" + f"\n\n{PY_CELL_DELIMITER}\n\n".join(cells) + "\n"
