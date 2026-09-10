@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from dataclasses import dataclass, field
 from importlib import resources
 
@@ -181,8 +182,16 @@ def check_lab(
     agent_space = None
     if any(c.get("kind") == "agent" for c in spec["checks"]):
         want = agent or spec.get("agent_title", "")
-        spaces = w.api_client.do("GET", "/api/2.0/genie/spaces").get("spaces", [])
-        match = [sp for sp in spaces if want.lower() in (sp.get("title") or "").lower()]
+        # A just-created space takes a few seconds to appear in the listing, and
+        # "no agent found" is a poor answer to give someone who made one a moment ago.
+        match = []
+        for attempt in range(4):
+            spaces = w.api_client.do("GET", "/api/2.0/genie/spaces").get("spaces", [])
+            match = [sp for sp in spaces if want.lower() in (sp.get("title") or "").lower()]
+            if match:
+                break
+            if attempt < 3:
+                time.sleep(4)
         if match:
             newest = sorted(match, key=lambda sp: sp.get("create_time", ""))[-1]
             full = w.api_client.do(
